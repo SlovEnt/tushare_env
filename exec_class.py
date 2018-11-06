@@ -4,6 +4,7 @@ __date__ = '2018/11/5 21:42'
 
 import time
 import os
+from collections import OrderedDict
 
 class Tushare_Proc(object):
 
@@ -20,6 +21,41 @@ class Tushare_Proc(object):
             return rtnDataType
         except:
             return False
+
+    def get_table_field_list(self, tableName):
+
+        rtnDict = OrderedDict()
+
+        strSql = """
+            SELECT
+                column_name
+            FROM
+                information_schema. COLUMNS
+            WHERE
+                0 = 0
+            AND table_schema = 'tushare_datas'
+            AND table_name = '%s'
+        """ % tableName
+
+        rtnDatas = self.mysqlExe.query(strSql)
+
+        strFieldList = ""
+        for x in rtnDatas:
+            if x["column_name"] == "busi_date":
+                continue
+
+            if strFieldList == "":
+                strFieldList = "%s" % (x["column_name"])
+            else:
+                strFieldList = "%s,%s" % (strFieldList, x["column_name"])
+
+        rtnDict["StrFieldList"] = strFieldList
+
+        return rtnDict
+
+    def truncate_table(self,tableName):
+        strSql = "truncate table {0};".format(tableName)
+        self.mysqlExe.execute(strSql)
 
     def select_collect_flag(self, tableName, key_word, key_detail):
         strSql = "select count(*) as cnt from collect_flag a where a.func_name='%s' and a.key_word='%s' and a.key_detail='%s' and a.collect_date='%s'" % (
@@ -98,6 +134,17 @@ class Tushare_Proc(object):
         except:
             return False
 
+    def get_datas_for_db_stock_basic(self):
+        try:
+            strSql = "select ts_code from stock_basic order by ts_code"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
     def get_datas_for_ts_income(self, tsCode):
 
         # 定时器
@@ -131,13 +178,186 @@ class Tushare_Proc(object):
             return False
 
 
+    #################################################################
 
 
+    def proc_main_stock_basic_datas(self):
+        '''
+        股票列表
+        接口：stock_basic
+        描述：获取基础信息数据，包括股票代码、名称、上市日期、退市日期等
+        '''
+        # print(tp.get_table_field_list("stock_basic"))
+        tableName = "stock_basic"
+        df = self.pro.stock_basic(exchange='', list_status='', fields='ts_code,symbol,name,area,industry,fullname,enname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs')
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+        dataType = []
+        try:
+            self.truncate_table(tableName)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
+        except Exception as e:
+            print(e)
 
+    def proc_main_stock_company_datas(self):
+        '''
+        上市公司基本信息
+        接口：stock_company
+        描述：获取上市公司基础信息
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "stock_company"
+        df = self.pro.stock_company(exchange='', fields='ts_code,exchange,chairman,manager,secretary,reg_capital,setup_date,province,city,introduction,website,email,office,employees,main_business,business_scope')
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            self.truncate_table(tableName)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
+        except Exception as e:
+            print(e)
 
+    def proc_main_trade_cal_datas(self, startDate, endDate):
+        '''
+        股票列表
+        接口：trade_cal
+        描述：获取各大交易所交易日历数据,默认提取的是上交所
+        '''
+        tableName = "trade_cal"
+        df = self.pro.trade_cal(exchange='', start_date=startDate, end_date=endDate)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+        dataType = []
+        try:
+            strSql = "delete from trade_cal where cal_date between {0} and {1}".format(startDate, endDate)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
+        except Exception as e:
+            print(e)
+
+    def proc_main_hs_const_datas(self, hsType):
+        '''
+        沪深股通成份股
+        接口：hs_const
+        描述：获取沪股通、深股通成分数据
+        '''
+        tableName = "hs_const"
+        df = self.pro.hs_const(hs_type=hsType)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+        dataType = []
+        try:
+            strSql = "delete from hs_const where hs_type = '{0}'".format(hsType)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+
+        except Exception as e:
+            print(e)
+
+    def proc_main_new_share_datas(self):
+        '''
+        接口：new_share
+        描述：获取新股上市列表数据
+        限量：单次最大2000条，总量不限制
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "new_share"
+        df = self.pro.new_share()
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+        dataType = []
+        try:
+            self.truncate_table(tableName)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+
+        except Exception as e:
+            print(e)
+
+    def proc_main_daily_datas(self, trdDate):
+        '''
+        日线行情
+        接口：daily
+        更新时间：交易日每天15点～16点之间
+        描述：获取股票行情数据，或通过通用行情接口获取数据，包含了前后复权数据．
+        '''
+        tableName = "daily"
+        df = self.pro.daily(trade_date=trdDate)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, 'trade_date', trdDate)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, 'trade_date', trdDate)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, trdDate))
+
+    def proc_main_adj_factor_datas(self, argsDict):
+        '''
+        复权因子
+        接口：adj_factor
+        更新时间：早上9点30分
+        描述：获取股票复权因子，可提取单只股票全部历史复权因子，也可以提取单日全部股票的复权因子。
+        '''
+        tableName = "adj_factor"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if codeType == "ts_code":
+            df = self.pro.adj_factor(ts_code='{0}'.format(inputCode), trade_date='')
+        elif codeType == "trade_date":
+            df = self.pro.adj_factor(ts_code='', trade_date='{0}'.format(inputCode))
+
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_suspend_datas(self, tsCode):
+        '''
+        停复牌信息
+        接口：suspend
+        更新时间：不定期
+        描述：获取股票每日停复牌信息
+        '''
+        tableName = "suspend"
+        df = self.pro.suspend(ts_code='{0}'.format(tsCode), suspend_date='', resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, 'ts_code', tsCode)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, 'ts_code', tsCode)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, tsCode))
 
 
 

@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'SlovEnt'
+__date__ = '2018/11/6 20:46'
+
+# -*- coding: utf-8 -*-
+__author__ = 'SlovEnt'
 __date__ = '2018/11/4 22:38'
 
 from collections import OrderedDict
@@ -169,121 +173,9 @@ def get_income():
         print(e)
 
 
-
-
-
 def main():
 
     print(tp.get_table_field_list("suspend"))
-
-    # tp.proc_main_stock_basic_datas()
-    # tp.proc_main_trade_cal_datas("20180101", "20181231")
-    # tp.proc_main_stock_company_datas()
-    # tp.proc_main_hs_const_datas("SH")
-    # tp.proc_main_hs_const_datas("SZ")
-    # tp.proc_main_new_share_datas()
-
-
-    pool = Pool(10)
-    stockCodeList = tp.get_datas_for_db_stock_basic()
-    if stockCodeList is not False:
-        for stockCode in stockCodeList:
-            argsDict = {}
-            argsDict["inputCode"] = stockCode["ts_code"]
-            argsDict["codeType"] = "ts_code"
-            tp.proc_main_adj_factor_datas(argsDict)
-            # pool.apply_async(tp.proc_main_adj_factor_datas, args=(argsDict,))
-            # tp.proc_main_suspend_datas(stockCode)
-            # pool.apply_async(func=tp.proc_main_suspend_datas, args=(stockCode,))
-    pool.close()
-    pool.join()
-
-    # rtnDateList = tp.get_datas_for_db_trade_cal(busiDate, busiDate)
-    #
-    # if rtnDateList is not False:
-    #
-    #     for rtnDate in rtnDateList:
-    #         # proc_main_daily_datas(rtnDate["cal_date"])
-    #         proc_main_daily_datas(rtnDate["cal_date"])
-
-
-
-
-    # get_income()
-
-
-
-    # pool = Pool(10)
-
-
-        # pool.apply_async(func=tp.insert_new_datas_2_db, args=(tableName, datas, dataType, "N",))
-    # pool.close()
-    # pool.join()
-
-    # print(get_table_field_list("namechange"))
-
-    #####################################################################
-    # get_stock_basic()
-
-    # get_trade_cal("20060101", "20181231")
-
-    # get_stock_company()
-
-    # get_hs_const("SH")
-    # get_hs_const("SZ")
-
-    # get_namechange()
-
-    # get_new_share(busiDate, busiDate)
-
-    # pool = Pool(10)
-    # tradeDays = mysqlExe.query("select cal_date from trade_cal where is_open=1 and cal_date between 20180101 and %s order by cal_date;" % busiDate)
-    #
-    #
-    # for tradeDay in tradeDays:
-    #     tradeDate = tradeDay["cal_date"]
-    #     pool.apply_async(func=get_adj_factor, args=(tradeDate,))
-    #     # get_daily(tradeDate)
-    # pool.close()
-    # pool.join()
-
-
-    # pool = Pool(10)
-    # tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
-    #
-    # for tsCode in tsCodeList:
-    #     tsCode = tsCode["ts_code"]
-    #     pool.apply_async(func=get_suspend, args=(tsCode,))
-    #     # get_daily(tradeDate)
-    # pool.close()
-    # pool.join()
-
-
-    # pool = Pool(10)
-    # tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
-    #
-    # for tsCode in tsCodeList:
-    #     tsCode = tsCode["ts_code"]
-    #     pool.apply_async(func=get_daily_basic, args=(tsCode,))
-    #     # get_daily(tradeDate)
-    # pool.close()
-    # pool.join()
-
-    # pool = Pool(10)
-    # tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
-    #
-    # for tsCode in tsCodeList:
-    #     tsCode = tsCode["ts_code"]
-    #     pool.apply_async(func=get_income, args=(tsCode,))
-    # pool.close()
-    # pool.join()
-
-#     desc = mysqlExe.query("""
-#     select column_name,data_type
-# from information_schema.columns
-# where table_name='income'
-#     """)
-#     print(desc)
 
 if __name__ == '__main__':
     main()
