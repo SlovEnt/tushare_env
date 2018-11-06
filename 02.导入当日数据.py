@@ -174,7 +174,7 @@ def get_income():
 
 def main():
 
-    print(tp.get_table_field_list("fina_audit"))
+    print(tp.get_table_field_list("fina_mainbz"))
 
     # tp.proc_main_stock_basic_datas()
     # tp.proc_main_trade_cal_datas("20180101", "20181231")
@@ -209,7 +209,8 @@ def main():
             # tp.proc_main_express_datas(argsDict)
             # tp.proc_main_dividend_datas(argsDict)
             # tp.proc_main_fina_indicator_datas(argsDict)
-            tp.proc_main_fina_audit_datas(argsDict)
+            # tp.proc_main_fina_audit_datas(argsDict)
+            tp.proc_main_fina_mainbz_datas(argsDict)
 
 
 

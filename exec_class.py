@@ -646,7 +646,7 @@ class Tushare_Proc(object):
         描述：获取上市公司定期财务审计意见数据
         权限：用户需要至少300积分才可以调取，具体请参阅积分获取办法
         '''
-        tableName = "fina_indicator"
+        tableName = "fina_audit"
         # print(argsDict)
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
@@ -659,6 +659,43 @@ class Tushare_Proc(object):
                 df = self.pro.fina_audit(ts_code='{0}'.format(inputCode), fields="ts_code,ann_date,end_date,audit_result,audit_fees,audit_agency,audit_sign")
             elif codeType == "trade_date":
                 df = self.pro.fina_audit(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fina_mainbz_datas(self, argsDict):
+        '''
+        主营业务构成
+        接口：fina_mainbz
+        描述：获得上市公司主营业务构成，分地区和产品两种方式
+        权限：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fina_mainbz"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.fina_mainbz(ts_code='{0}'.format(inputCode), fields="ts_code,end_date,bz_item,bz_sales,bz_profit,bz_cost,curr_type,update_flag")
+            elif codeType == "trade_date":
+                df = self.pro.fina_mainbz(ts_code='', period='{0}'.format(inputCode), fields="ts_code,end_date,bz_item,bz_sales,bz_profit,bz_cost,curr_type,update_flag")
 
             time.sleep(2.5)
 
