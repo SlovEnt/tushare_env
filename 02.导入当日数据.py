@@ -8,9 +8,11 @@ import re
 import time
 import tushare as ts
 from multiprocessing import Pool
+import traceback
 
 from chpackage.param_info import get_param_info
 from chpackage import torndb
+from  exec_class import Tushare_Proc
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,8 +28,9 @@ mysqlExe = torndb.Connection(
     password = PARAINFO["USER_PWD"],
 )
 
-pro = ts.pro_api(PARAINFO["TUSHARE_TOKEN"])
 busiDate = time.strftime('%Y%m%d', time.localtime(time.time()))
+pro = ts.pro_api(PARAINFO["TUSHARE_TOKEN"])
+tp = Tushare_Proc(pro, mysqlExe)
 
 def get_table_field_list(tableName):
 
@@ -210,38 +213,76 @@ def get_daily_basic(tsCode):
     except Exception as e:
         print(e)
 
-def get_income(tsCode):
+def get_income():
     try:
         tableName = "income"
-        strSql = "delete from %s where ts_code = '%s';" % (tableName, tsCode)
-        mysqlExe.execute(strSql)
+        tsCodeList = mysqlExe.query(
+            "select ts_code from stock_basic where ts_code not in (select key_detail from collect_flag where flag = 'Y' and func_name='{0}' and key_word='{1}') ;".format(
+                tableName, "ts_code"))
 
-        datas = pro.income(ts_code='%s' % tsCode, trade_date='')
-        dataDict = datas.to_dict("records")
-
-        insert_new_row_2_mysql(tableName, dataDict, "N")
+        for tsCode in tsCodeList:
+            tsCode = tsCode["ts_code"]
+            strSql = "delete from {0} where ts_code = '{1}'".format(tableName, tsCode)
+            mysqlExe.execute(strSql)
+            datas = tp.get_datas_for_ts_income(tsCode)
+            if datas is not False:
+                dataType = tp.get_table_column_data_type(tableName)
+                tp.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                tp.insert_collect_flag(tableName, 'ts_code', tsCode, 'Y')
     except Exception as e:
         print(e)
 
-from  exec_class import Tushare_Proc
+def proc_main_daily_datas(trdDate):
+    '''
+    日线行情
+    接口：daily
+    更新时间：交易日每天15点～16点之间
+    描述：获取股票行情数据，或通过通用行情接口获取数据，包含了前后复权数据．
+    '''
+    tableName = "daily"
+    df = pro.daily(trade_date=trdDate)
+    df = df.fillna(value=0)
+    datas = df.to_dict("records")
 
-tp = Tushare_Proc(pro, mysqlExe)
+    rtnMsg = tp.select_collect_flag(tableName, 'trade_date', trdDate)
+
+    if len(datas) != 0 and rtnMsg is True:
+
+        dataType = tp.get_table_column_data_type(tableName)
+        try:
+            # strSql = "delete from %s where trade_date = '%s';" % (tableName, trdDate)
+            # mysqlExe.execute(strSql)
+
+            tp.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            tp.insert_collect_flag(tableName, 'trade_date', trdDate)
+        except Exception as e:
+            traceback.print_exc()
+    else:
+        print("接口名称：{0}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName))
 
 def main():
 
+    rtnDateList = tp.get_datas_for_db_trade_cal(20180101, busiDate)
 
-    tableName = "income"
-    tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
+    if rtnDateList is not False:
 
-    for tsCode in tsCodeList:
-        tsCode = tsCode["ts_code"]
-        # tsCode = "603987.SH"
-        # 删除要导入的数据
-        strSql = "delete from {0} where ts_code = '{1}'".format(tableName, tsCode)
-        mysqlExe.execute(strSql)
-        datas = tp.get_datas_for_income(tsCode)
-        dataType = tp.get_table_column_data_type(tableName)
-        tp.insert_new_datas_2_db(tableName, datas, dataType, "N")
+        for rtnDate in rtnDateList:
+            # proc_main_daily_datas(rtnDate["cal_date"])
+            proc_main_daily_datas(rtnDate["cal_date"])
+
+
+
+
+    # get_income()
+
+
+
+    # pool = Pool(10)
+
+
+        # pool.apply_async(func=tp.insert_new_datas_2_db, args=(tableName, datas, dataType, "N",))
+    # pool.close()
+    # pool.join()
 
     # print(get_table_field_list("namechange"))
 
