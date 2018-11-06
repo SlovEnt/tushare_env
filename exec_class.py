@@ -359,6 +359,322 @@ class Tushare_Proc(object):
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, tsCode))
 
+    def proc_main_daily_basic_datas(self, argsDict):
+        '''
+        每日指标
+        接口：daily_basic
+        更新时间：交易日每日15点～17点之间
+        描述：获取全部股票每日重要的基本面指标，可用于选股分析、报表展示等。
+        '''
+        tableName = "daily_basic"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if codeType == "ts_code":
+            df = self.pro.daily_basic(ts_code='{0}'.format(inputCode), trade_date='')
+        elif codeType == "trade_date":
+            df = self.pro.daily_basic(ts_code='', trade_date='{0}'.format(inputCode))
+
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_income_datas(self, argsDict):
+        '''
+        利润表
+        接口：income
+        描述：获取上市公司财务利润表数据
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "income"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if codeType == "ts_code":
+            df = self.pro.income(ts_code='{0}'.format(inputCode), start_date='', end_date='')
+        elif codeType == "trade_date":
+            df = self.pro.income(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_balancesheet_datas(self, argsDict):
+        '''
+        资产负债表
+        接口：balancesheet
+        描述：获取上市公司资产负债表
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "balancesheet"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if codeType == "ts_code":
+            df = self.pro.balancesheet(ts_code='{0}'.format(inputCode), start_date='', end_date='')
+        elif codeType == "trade_date":
+            df = self.pro.balancesheet(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_cashflow_datas(self, argsDict):
+        '''
+        现金流量表
+        接口：cashflow
+        描述：获取上市公司现金流量表
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "cashflow"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if codeType == "ts_code":
+            df = self.pro.cashflow(ts_code='{0}'.format(inputCode), start_date='', end_date='')
+        elif codeType == "trade_date":
+            df = self.pro.cashflow(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if len(datas) != 0 and rtnMsg is True:
+
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_forecast_datas(self, argsDict):
+        '''
+        现金流量表
+        接口：cashflow
+        描述：获取上市公司现金流量表
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "forecast"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.forecast(ts_code='{0}'.format(inputCode), start_date='', end_date='')
+            elif codeType == "trade_date":
+                df = self.pro.forecast(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_express_datas(self, argsDict):
+        '''
+        业绩快报
+        接口：express
+        描述：获取上市公司业绩快报
+        权限：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "express"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.express(ts_code='{0}'.format(inputCode), start_date='', end_date='')
+            elif codeType == "trade_date":
+                df = self.pro.express(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_dividend_datas(self, argsDict):
+        '''
+        分红送股
+        接口：dividend
+        描述：分红送股数据
+        权限：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "dividend"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.dividend(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.dividend(ts_code='', ann_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fina_indicator_datas(self, argsDict):
+        '''
+        财务指标数据
+        接口：fina_indicator
+        描述：获取上市公司财务指标数据，为避免服务器压力，现阶段每次请求最多返回30条记录，可通过设置日期多次请求获取更多数据。
+        权限：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fina_indicator"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.fina_indicator(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.fina_indicator(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fina_audit_datas(self, argsDict):
+        '''
+        财务审计意见
+        接口：fina_audit
+        描述：获取上市公司定期财务审计意见数据
+        权限：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fina_indicator"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.fina_audit(ts_code='{0}'.format(inputCode), fields="ts_code,ann_date,end_date,audit_result,audit_fees,audit_agency,audit_sign")
+            elif codeType == "trade_date":
+                df = self.pro.fina_audit(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
 
 

@@ -174,7 +174,7 @@ def get_income():
 
 def main():
 
-    print(tp.get_table_field_list("suspend"))
+    print(tp.get_table_field_list("fina_audit"))
 
     # tp.proc_main_stock_basic_datas()
     # tp.proc_main_trade_cal_datas("20180101", "20181231")
@@ -188,12 +188,33 @@ def main():
     stockCodeList = tp.get_datas_for_db_stock_basic()
     if stockCodeList is not False:
         for stockCode in stockCodeList:
+
             argsDict = {}
             argsDict["inputCode"] = stockCode["ts_code"]
             argsDict["codeType"] = "ts_code"
-            tp.proc_main_adj_factor_datas(argsDict)
+
+            # tp.proc_main_adj_factor_datas(argsDict)
             # pool.apply_async(tp.proc_main_adj_factor_datas, args=(argsDict,))
+
+            # stockCode = argsDict["inputCode"]
             # tp.proc_main_suspend_datas(stockCode)
+
+            # tp.proc_main_daily_basic_datas(argsDict)
+
+            # tp.proc_main_income_datas(argsDict)
+
+            # tp.proc_main_balancesheet_datas(argsDict)
+            # tp.proc_main_cashflow_datas(argsDict)
+            # tp.proc_main_forecast_datas(argsDict)
+            # tp.proc_main_express_datas(argsDict)
+            # tp.proc_main_dividend_datas(argsDict)
+            # tp.proc_main_fina_indicator_datas(argsDict)
+            tp.proc_main_fina_audit_datas(argsDict)
+
+
+
+
+
             # pool.apply_async(func=tp.proc_main_suspend_datas, args=(stockCode,))
     pool.close()
     pool.join()
