@@ -123,9 +123,34 @@ class Tushare_Proc(object):
             except Exception as e:
                 print(e)
 
-    def get_datas_for_db_trade_cal(self,begDate, endDate):
+    def get_datas_for_db_trade_cal(self, begDate, endDate):
         try:
             strSql = "select cal_date from trade_cal a where 0=0 and a.exchange in ('SSE','SZSE') and is_open=1 and cal_date between {0} and {1} order by cal_date".format(begDate, endDate)
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_db_concept(self):
+        try:
+            strSql = "select code from concept a where 0=0 order by code;"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_db_sys_dict(self, dictId, dictItem='*'):
+        try:
+            if dictItem == "*":
+                strSql = "select dict_item from sys_dict a where 0=0 and dict_id = '{0}' order by dict_item;".format(dictId)
+            else:
+                strSql = "select dict_item from sys_dict a where 0=0 and dict_id = '{0}' and dict_item = '{1}' order by dict_item;".format(dictId, dictItem)
             rtnDatas = self.mysqlExe.query(strSql)
             if len(rtnDatas) == 0:
                 return False
@@ -334,7 +359,7 @@ class Tushare_Proc(object):
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
-    def proc_main_suspend_datas(self, tsCode):
+    def proc_main_suspend_datas(self, argsDict):
         '''
         停复牌信息
         接口：suspend
@@ -342,22 +367,25 @@ class Tushare_Proc(object):
         描述：获取股票每日停复牌信息
         '''
         tableName = "suspend"
-        df = self.pro.suspend(ts_code='{0}'.format(tsCode), suspend_date='', resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        df = self.pro.suspend(ts_code='{0}'.format(inputCode), suspend_date='', resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
-        rtnMsg = self.select_collect_flag(tableName, 'ts_code', tsCode)
+        rtnMsg = self.select_collect_flag(tableName, 'ts_code', inputCode)
 
         if len(datas) != 0 and rtnMsg is True:
 
             dataType = self.get_table_column_data_type(tableName)
             try:
                 self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, 'ts_code', tsCode)
+                self.insert_collect_flag(tableName, 'ts_code', inputCode)
             except Exception as e:
                 print(e)
         else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, tsCode))
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
     def proc_main_daily_basic_datas(self, argsDict):
         '''
@@ -713,5 +741,995 @@ class Tushare_Proc(object):
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
+    def proc_main_moneyflow_hsgt_datas(self, argsDict):
+        '''
+        接口：moneyflow_hsgt
+        描述：获取沪股通、深股通、港股通每日资金流向数据
+        '''
+        tableName = "moneyflow_hsgt"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
 
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "start_date":
+                df = self.pro.moneyflow_hsgt(start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.moneyflow_hsgt(trade_date ='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_hsgt_top10_datas(self, argsDict):
+        '''
+        沪深股通十大成交股
+        接口：hsgt_top10
+        描述：获取沪股通、深股通每日前十大成交详细数据
+        '''
+        tableName = "hsgt_top10"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.hsgt_top10(ts_code='{0}'.format(inputCode), fields="trade_date,ts_code,name,close,p_change,rank,market_type,amount,net_amount,buy,sell")
+            elif codeType == "trade_date":
+                df = self.pro.hsgt_top10(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode), fields="trade_date,ts_code,name,close,p_change,rank,market_type,amount,net_amount,buy,sell")
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_margin_detail_datas(self, argsDict):
+        '''
+        融资融券交易明细
+        接口：margin_detail
+        描述：获取沪深两市每日融资融券明细
+        '''
+        tableName = "margin_detail"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.margin_detail(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.margin_detail(ts_code='', trade_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_top10_holders_datas(self, argsDict):
+        '''
+        前十大股东
+        接口：top10_holders
+        描述：获取上市公司前十大股东数据，包括持有数量和比例等信息。
+        '''
+        tableName = "top10_holders"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.top10_holders(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.top10_holders(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_top10_floatholders_datas(self, argsDict):
+        '''
+        前十大流通股东
+        接口：top10_floatholders
+        描述：获取上市公司前十大流通股东数据。
+        '''
+        tableName = "top10_floatholders"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.top10_floatholders(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.top10_floatholders(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_top_list_datas(self, argsDict):
+        '''
+        龙虎榜每日明细
+        接口：top_list
+        描述：龙虎榜每日交易明细
+        数据历史： 2005年至今
+        限量：单次最大10000
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "top_list"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.top_list(ts_code='{0}'.format(inputCode), trade_date='{0}'.format(self.busiDate))
+            elif codeType == "trade_date":
+                df = self.pro.top_list(trade_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_top_inst_datas(self, argsDict):
+        '''
+        龙虎榜机构明细
+        接口：top_inst
+        描述：龙虎榜机构成交明细
+        限量：单次最大10000
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "top_inst"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.top_inst(ts_code='{0}'.format(inputCode), trade_date='{0}'.format(self.busiDate))
+            elif codeType == "trade_date":
+                df = self.pro.top_inst(trade_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_pledge_stat_datas(self, argsDict):
+        '''
+        股权质押统计数据
+        接口：pledge_stat
+        描述：获取股权质押统计数据
+        限量：单次最大1000
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "pledge_stat"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.pledge_stat(ts_code='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_pledge_detail_datas(self, argsDict):
+        '''
+        股权质押明细
+        接口：pledge_detail
+        描述：获取股权质押明细数据
+        限量：单次最大1000
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "pledge_detail"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.pledge_detail(ts_code='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_repurchase_datas(self, argsDict):
+        '''
+        股票回购
+        接口：repurchase
+        描述：获取上市公司回购股票数据
+        积分：用户需要至少600积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "repurchase"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.repurchase(ann_date='{0}'.format(inputCode))
+            elif codeType == "ann_date":
+                df = self.pro.repurchase(ann_date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_concept_datas(self, argsDict):
+        '''
+        概念股分类
+        接口：concept
+        描述：获取概念股分类，目前只有ts一个来源，未来将逐步增加来源
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "concept"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "src":
+                df = self.pro.concept(src='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_concept_detail_datas(self, argsDict):
+        '''
+        概念股列表
+        接口：concept_detail
+        描述：获取概念股分类明细数据
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "concept_detail"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "id":
+                df = self.pro.concept_detail(id='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from concept_detail where id = '{0}';".format(inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_index_basic_datas(self, argsDict):
+        '''
+        指数基本信息
+        接口：index_basic
+        描述：获取指数基础信息。
+        '''
+        tableName = "index_basic"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "market":
+                df = self.pro.index_basic(market='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_index_daily_datas(self, argsDict):
+        '''
+        指数日线行情
+        接口：index_daily
+        描述：获取指数每日行情，还可以通过bar接口获取。由于服务器压力，目前规则是单次调取最多取2800行记录，可以设置start和end日期补全。指数行情也可以通过通用行情接口获取数据．
+        '''
+        tableName = "index_daily"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.index_daily(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.index_daily(trade_date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_index_weight_datas(self, argsDict):
+        '''
+        指数成分和权重
+        接口：index_weight
+        描述：获取各类指数成分和权重，月度数据 ，如需日度指数成分和权重，请联系 waditu@163.com
+        来源：指数公司网站公开数据
+        积分：用户需要至少400积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "index_weight"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "index_code":
+                df = self.pro.index_weight(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.index_weight(trade_date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fund_basic_datas(self, argsDict):
+        '''
+        公募基金列表
+        接口：fund_basic
+        描述：获取公募基金数据列表，包括场内和场外基金
+        积分：用户需要至少200积分才可以调取，具体请参阅积分获取办法
+        交易市场: E场内 O场外（默认E）
+        '''
+        tableName = "fund_basic"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "market":
+                '''交易市场: E场内 O场外（默认E）'''
+                df = self.pro.fund_basic(market='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fund_company_datas(self):
+        '''
+        公募基金公司
+        接口：fund_company
+        描述：获取公募基金管理人列表
+        积分：用户需要至少200积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fund_company"
+
+        rtnMsg = True
+
+        if rtnMsg is True:
+
+            df = self.pro.fund_company()
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.truncate_table(tableName)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                except Exception as e:
+                    print(e)
+
+    def proc_main_fund_nav_datas(self, argsDict):
+        '''
+        公募基金净值
+        接口：fund_nav
+        描述：获取公募基金净值数据
+        积分：用户需要至少400积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fund_nav"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.fund_nav(ts_code='{0}'.format(inputCode))
+            elif codeType == "end_date":
+                df = self.pro.fund_nav(end_date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fund_div_datas(self, argsDict):
+        '''
+        公募基金分红
+        接口：fund_div
+        描述：获取公募基金分红数据
+        积分：用户需要至少400积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fund_div"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ann_date":
+                df = self.pro.fund_div(ann_date='{0}'.format(inputCode))
+            elif codeType == "ex_date":
+                df = self.pro.fund_div(ex_date='{0}'.format(inputCode))
+            elif codeType == "ex_date":
+                df = self.pro.fund_div(pay_date='{0}'.format(inputCode))
+            elif codeType == "ex_date":
+                df = self.pro.fund_div(ts_code='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_fund_daily_datas(self, argsDict):
+        '''
+        场内基金日线行情
+        接口：fund_daily
+        描述：获取场内基金日线行情，类似股票日行情
+        更新：每日收盘后2小时内
+        限量：单次最大800行记录，总量不限制
+        积分：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fund_daily"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.fund_daily(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.fund_daily(trade_date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_tmt_twincome_datas(self, argsDict):
+        '''
+        台湾电子产业月营收
+        接口：tmt_twincome
+        描述：获取台湾TMT电子产业领域各类产品月度营收数据。
+        '''
+        tableName = "tmt_twincome"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "item":
+                df = self.pro.tmt_twincome(item='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_tmt_twincomedetail_datas(self, argsDict):
+        '''
+        台湾电子产业月营收明细
+        接口：tmt_twincomedetail
+        描述：获取台湾TMT行业上市公司各类产品月度营收情况。
+        '''
+        tableName = "tmt_twincomedetail"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "date":
+                df = self.pro.tmt_twincomedetail(date='{0}'.format(inputCode))
+            elif codeType == "item":
+                df = self.pro.tmt_twincomedetail(item='{0}'.format(inputCode))
+            elif codeType == "symbol":
+                df = self.pro.tmt_twincomedetail(symbol='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_bo_monthly_datas(self, argsDict):
+        '''
+        电影月度票房
+        接口：bo_monthly
+        描述：获取电影月度票房数据
+        数据更新：本月更新上一月数据
+        数据历史： 数据从2008年1月1日开始，超过10年历史数据。
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_monthly"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "date":
+                df = self.pro.bo_monthly(date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_bo_weekly_datas(self, argsDict):
+        '''
+        电影周度票房
+        接口：bo_weekly
+        描述：获取周度票房数据
+        数据更新：本周更新上一周数据
+        数据历史： 数据从2008年第一周开始，超过10年历史数据。
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_weekly"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "date":
+                df = self.pro.bo_weekly(date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_bo_daily_datas(self, argsDict):
+        '''
+        电影日度票房
+        接口：bo_daily
+        描述：获取电影日度票房
+        数据更新：当日更新上一日数据
+        数据历史： 数据从2018年9月开始，更多历史数据正在补充
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_daily"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "date":
+                df = self.pro.bo_daily(date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_bo_cinema_datas(self, argsDict):
+        '''
+        影院每日票房
+        接口：bo_cinema
+        描述：获取每日各影院的票房数据
+        数据历史： 数据从2018年9月开始，更多历史数据正在补充
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_cinema"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "date":
+                df = self.pro.bo_cinema(date='{0}'.format(inputCode))
+            else:
+                return False
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 

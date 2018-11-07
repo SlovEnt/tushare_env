@@ -32,280 +32,95 @@ busiDate = time.strftime('%Y%m%d', time.localtime(time.time()))
 pro = ts.pro_api(PARAINFO["TUSHARE_TOKEN"])
 tp = Tushare_Proc(pro, mysqlExe)
 
-def insert_new_row_2_mysql(tableName, dataDict, busiDateFlag):
-    '''
-    :param tableName:
-    :param dataDict:
-    :param busiDateFlag: N 表字段中无busi_date字段，Y 存在
-    :return:
-    '''
+def imp_basic_datas_2_db():
+    ''' 该函数集合执行的是无参数或固定参数的数据导入 '''
+    tp.proc_main_stock_basic_datas()
+    tp.proc_main_trade_cal_datas("20010101", "20181231")
+    tp.proc_main_stock_company_datas()
+    tp.proc_main_hs_const_datas("SH")
+    tp.proc_main_hs_const_datas("SZ")
+    tp.proc_main_new_share_datas()
+    tp.proc_main_fund_company_datas()
+    tp.proc_main_concept_datas({"inputCode": "ts", "codeType": "src"})
+    tp.proc_main_fund_basic_datas({"inputCode": "E", "codeType": "market"})
+    tp.proc_main_fund_basic_datas({"inputCode": "O", "codeType": "market"})
 
-    i = 0
-    for rowItem in dataDict:
-        i += 1
-        # insert sql
-        strSqlRowFeld = ""
-        strSqlRowValue = ""
+def imp_by_stock_code_datas_2_db():
+    stockCodeList = tp.get_datas_for_db_stock_basic()
+    if stockCodeList is False:
+        return False
 
-        for k,v in rowItem.items():
-            if strSqlRowFeld == "" and busiDateFlag == "Y":
-                strSqlRowFeld = "`busi_date`, `{0}`".format(k)
-            elif strSqlRowFeld == "" and busiDateFlag == "N":
-                strSqlRowFeld = "`{0}`".format(k)
-            else:
-                strSqlRowFeld = "{0}, `{1}`".format(strSqlRowFeld, k)
+    for stockCode in stockCodeList:
 
-            if strSqlRowValue == ""  and busiDateFlag == "Y":
-                strSqlRowValue = "'{0}','{1}'".format(busiDate, v)
-            elif strSqlRowValue == ""  and busiDateFlag == "N":
-                strSqlRowValue = "'{0}'".format(v)
-            else:
-                ''' 特殊处理 转换类型 '''
-                if k == "volume_ratio":
-                    v = 0
-                if v is None:
-                    v = ""
-                if "'" in str(v):
-                    v = v.replace("'", "''")
-                if "%" in str(v):
-                    v = v.replace("%", "%%")
-                strSqlRowValue = "{0}, '{1}'".format(strSqlRowValue, v)
+        argsDict = {}
+        argsDict["inputCode"] = stockCode["ts_code"]
+        argsDict["codeType"] = "ts_code"
 
-        strSql = "INSERT INTO {0} ({1}) VALUES ({2})".format(tableName, strSqlRowFeld, strSqlRowValue)
+        tp.proc_main_adj_factor_datas(argsDict)
+        tp.proc_main_suspend_datas(argsDict)
+        tp.proc_main_daily_basic_datas(argsDict)
+        tp.proc_main_income_datas(argsDict)
+        tp.proc_main_balancesheet_datas(argsDict)
+        tp.proc_main_cashflow_datas(argsDict)
+        tp.proc_main_forecast_datas(argsDict)
+        tp.proc_main_express_datas(argsDict)
+        tp.proc_main_dividend_datas(argsDict)
+        tp.proc_main_fina_indicator_datas(argsDict)
+        tp.proc_main_fina_audit_datas(argsDict)
+        tp.proc_main_fina_mainbz_datas(argsDict)
+        tp.proc_main_hsgt_top10_datas(argsDict)
+        tp.proc_main_top10_holders_datas(argsDict)
+        tp.proc_main_top10_floatholders_datas(argsDict)
+        tp.proc_main_top_list_datas(argsDict)
+        tp.proc_main_pledge_stat_datas(argsDict)
+        tp.proc_main_pledge_detail_datas(argsDict)
 
-        print(i, strSql)
-
-        mysqlExe.execute(strSql)
-
-def delete_date_row_2_mysql(tableName):
-
-    strSql = "delete from %s where busi_date = '%s'" % (tableName, busiDate)
-    mysqlExe.execute(strSql)
-
-
-def get_hs_const(hsType):
-    tableName = "hs_const"
-    datas = pro.hs_const(hs_type=hsType)
-    dataDict = datas.to_dict("records")
-    delete_date_row_2_mysql(tableName)
-    insert_new_row_2_mysql(tableName, dataDict, "Y")
-
-def get_namechange():
-    tableName = "namechange"
-    strSql = "delete from %s;" % (tableName)
-    mysqlExe.execute(strSql)
-    datas = pro.namechange(ts_code='', fields='ts_code,name,start_date,end_date,ann_date,change_reason')
-    dataDict = datas.to_dict("records")
-    insert_new_row_2_mysql(tableName, dataDict, "N")
-
-def get_new_share(begData, endData):
-    tableName = "new_share"
-    strSql = "delete from %s where ipo_date between %s and %s;" % (tableName, begData, endData)
-    mysqlExe.execute(strSql)
-    datas = pro.new_share(start_date=begData, end_date=endData)
-    dataDict = datas.to_dict("records")
-    insert_new_row_2_mysql(tableName, dataDict, "N")
-
-def get_daily(tradeDate):
-    tableName = "daily"
-    strSql = "delete from %s where trade_date = %s;" % (tableName, tradeDate)
-    mysqlExe.execute(strSql)
-
-    datas = pro.daily(trade_date=tradeDate)
-    dataDict = datas.to_dict("records")
-    insert_new_row_2_mysql(tableName, dataDict, "N")
-
-def get_adj_factor(tradeDate):
-    tableName = "adj_factor"
-    strSql = "delete from %s where trade_date = %s;" % (tableName, tradeDate)
-    mysqlExe.execute(strSql)
-
-    datas = pro.adj_factor(ts_code='', trade_date=tradeDate)
-    dataDict = datas.to_dict("records")
-    insert_new_row_2_mysql(tableName, dataDict, "N")
-
-def get_suspend(tsCode):
-    try:
-        tableName = "suspend"
-        strSql = "delete from %s where ts_code = '%s';" % (tableName, tsCode)
-        mysqlExe.execute(strSql)
-
-        datas = pro.suspend(ts_code='%s' % tsCode, suspend_date='', resume_date='', fiedls='')
-        dataDict = datas.to_dict("records")
-        insert_new_row_2_mysql(tableName, dataDict, "N")
-    except Exception as e:
-        print(e)
-
-def get_daily_basic(tsCode):
-    try:
-        tableName = "daily_basic"
-        strSql = "delete from %s where ts_code = '%s';" % (tableName, tsCode)
-        mysqlExe.execute(strSql)
-
-        datas = pro.daily_basic(ts_code='%s' % tsCode, trade_date='')
-        dataDict = datas.to_dict("records")
-
-        insert_new_row_2_mysql(tableName, dataDict, "N")
-    except Exception as e:
-        print(e)
-
-def get_income():
-    try:
-        tableName = "income"
-        tsCodeList = mysqlExe.query(
-            "select ts_code from stock_basic where ts_code not in (select key_detail from collect_flag where flag = 'Y' and func_name='{0}' and key_word='{1}') ;".format(
-                tableName, "ts_code"))
-
-        for tsCode in tsCodeList:
-            tsCode = tsCode["ts_code"]
-            strSql = "delete from {0} where ts_code = '{1}'".format(tableName, tsCode)
-            mysqlExe.execute(strSql)
-            datas = tp.get_datas_for_ts_income(tsCode)
-            if datas is not False:
-                dataType = tp.get_table_column_data_type(tableName)
-                tp.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                tp.insert_collect_flag(tableName, 'ts_code', tsCode, 'Y')
-    except Exception as e:
-        print(e)
-
-
-
+def imp_by_trade_date_datas_2_db(begDate, endDate):
+    tradeDateList = tp.get_datas_for_db_trade_cal(begDate, endDate)
+    print(tradeDateList)
+    for x in tradeDateList:
+        tradeDate = x["cal_date"]
+        tp.proc_main_moneyflow_hsgt_datas({"inputCode": "{0}".format(tradeDate), "codeType": "start_date"})
+        tp.proc_main_margin_detail_datas({"inputCode": "{0}".format(tradeDate), "codeType": "trade_date"})
+        tp.proc_main_top_list_datas({"inputCode": "{0}".format(tradeDate), "codeType": "trade_date"})
+        tp.proc_main_top_inst_datas({"inputCode": "{0}".format(tradeDate), "codeType": "trade_date"})
+        tp.proc_main_repurchase_datas({"inputCode": "{0}".format(tradeDate), "codeType": "ann_date"})
+        tp.proc_main_index_weight_datas({"inputCode": "{0}".format(tradeDate), "codeType": "trade_date"})
+        tp.proc_main_fund_nav_datas({"inputCode": "{0}".format(tradeDate), "codeType": "end_date"})
+        tp.proc_main_fund_div_datas({"inputCode": "{0}".format(tradeDate), "codeType": "ann_date"})
+        tp.proc_main_fund_daily_datas({"inputCode": "{0}".format(tradeDate), "codeType": "trade_date"})
+        tp.proc_main_bo_monthly_datas({"inputCode": "{0}".format(tradeDate), "codeType": "date"})
+        tp.proc_main_bo_weekly_datas({"inputCode": "{0}".format(tradeDate), "codeType": "date"})
+        tp.proc_main_bo_daily_datas({"inputCode": "{0}".format(tradeDate), "codeType": "date"})
+        tp.proc_main_bo_cinema_datas({"inputCode": "{0}".format(tradeDate), "codeType": "date"})
 
 
 def main():
 
-    print(tp.get_table_field_list("fina_mainbz"))
+    print(tp.get_table_field_list("hsgt_top10"))
 
-    # tp.proc_main_stock_basic_datas()
-    # tp.proc_main_trade_cal_datas("20180101", "20181231")
-    # tp.proc_main_stock_company_datas()
-    # tp.proc_main_hs_const_datas("SH")
-    # tp.proc_main_hs_const_datas("SZ")
-    # tp.proc_main_new_share_datas()
-
-
-    pool = Pool(10)
-    stockCodeList = tp.get_datas_for_db_stock_basic()
-    if stockCodeList is not False:
-        for stockCode in stockCodeList:
-
-            argsDict = {}
-            argsDict["inputCode"] = stockCode["ts_code"]
-            argsDict["codeType"] = "ts_code"
-
-            # tp.proc_main_adj_factor_datas(argsDict)
-            # pool.apply_async(tp.proc_main_adj_factor_datas, args=(argsDict,))
-
-            # stockCode = argsDict["inputCode"]
-            # tp.proc_main_suspend_datas(stockCode)
-
-            # tp.proc_main_daily_basic_datas(argsDict)
-
-            # tp.proc_main_income_datas(argsDict)
-
-            # tp.proc_main_balancesheet_datas(argsDict)
-            # tp.proc_main_cashflow_datas(argsDict)
-            # tp.proc_main_forecast_datas(argsDict)
-            # tp.proc_main_express_datas(argsDict)
-            # tp.proc_main_dividend_datas(argsDict)
-            # tp.proc_main_fina_indicator_datas(argsDict)
-            # tp.proc_main_fina_audit_datas(argsDict)
-            tp.proc_main_fina_mainbz_datas(argsDict)
+    # imp_basic_datas_2_db()
+    # imp_by_stock_code_datas_2_db()
+    imp_by_trade_date_datas_2_db("20180101", "20180107")
 
 
 
 
+    # rtnDatas = tp.get_datas_for_db_concept()
+    # for data in rtnDatas:
+    #     tp.proc_main_concept_detail_datas({"inputCode":data["code"],"codeType":"id"})
 
-            # pool.apply_async(func=tp.proc_main_suspend_datas, args=(stockCode,))
-    pool.close()
-    pool.join()
+    # rtnDatas = tp.get_datas_for_db_sys_dict("market")
+    # for data in rtnDatas:
+    #     tp.proc_main_index_basic_datas({"inputCode":data["dict_item"],"codeType":"market"})
 
-    # rtnDateList = tp.get_datas_for_db_trade_cal(busiDate, busiDate)
-    #
-    # if rtnDateList is not False:
-    #
-    #     for rtnDate in rtnDateList:
-    #         # proc_main_daily_datas(rtnDate["cal_date"])
-    #         proc_main_daily_datas(rtnDate["cal_date"])
+    # 需要送ts_code入参 待完成双入参
+    # tp.proc_main_index_daily_datas({"inputCode": "20181106", "codeType": "trade_date"})
 
 
+    # tp.proc_main_tmt_twincome_datas({"inputCode": "1", "codeType": "item"})
+    # tp.proc_main_tmt_twincomedetail_datas({"inputCode": "1", "codeType": "item"})
 
-
-    # get_income()
-
-
-
-    # pool = Pool(10)
-
-
-        # pool.apply_async(func=tp.insert_new_datas_2_db, args=(tableName, datas, dataType, "N",))
-    # pool.close()
-    # pool.join()
-
-    # print(get_table_field_list("namechange"))
-
-    #####################################################################
-    # get_stock_basic()
-
-    # get_trade_cal("20060101", "20181231")
-
-    # get_stock_company()
-
-    # get_hs_const("SH")
-    # get_hs_const("SZ")
-
-    # get_namechange()
-
-    # get_new_share(busiDate, busiDate)
-
-    # pool = Pool(10)
-    # tradeDays = mysqlExe.query("select cal_date from trade_cal where is_open=1 and cal_date between 20180101 and %s order by cal_date;" % busiDate)
-    #
-    #
-    # for tradeDay in tradeDays:
-    #     tradeDate = tradeDay["cal_date"]
-    #     pool.apply_async(func=get_adj_factor, args=(tradeDate,))
-    #     # get_daily(tradeDate)
-    # pool.close()
-    # pool.join()
-
-
-    # pool = Pool(10)
-    # tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
-    #
-    # for tsCode in tsCodeList:
-    #     tsCode = tsCode["ts_code"]
-    #     pool.apply_async(func=get_suspend, args=(tsCode,))
-    #     # get_daily(tradeDate)
-    # pool.close()
-    # pool.join()
-
-
-    # pool = Pool(10)
-    # tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
-    #
-    # for tsCode in tsCodeList:
-    #     tsCode = tsCode["ts_code"]
-    #     pool.apply_async(func=get_daily_basic, args=(tsCode,))
-    #     # get_daily(tradeDate)
-    # pool.close()
-    # pool.join()
-
-    # pool = Pool(10)
-    # tsCodeList = mysqlExe.query("select ts_code from stock_basic;")
-    #
-    # for tsCode in tsCodeList:
-    #     tsCode = tsCode["ts_code"]
-    #     pool.apply_async(func=get_income, args=(tsCode,))
-    # pool.close()
-    # pool.join()
-
-#     desc = mysqlExe.query("""
-#     select column_name,data_type
-# from information_schema.columns
-# where table_name='income'
-#     """)
-#     print(desc)
 
 if __name__ == '__main__':
     main()

@@ -25,3 +25,6 @@ simplejson==3.16.0
 six==1.11.0
 tushare==1.2.15
 urllib3==1.24.1
+
+
+select CONCAT('truncate table ',TABLE_NAME,';') from information_schema.`TABLES` where TABLE_SCHEMA='tushare_datas'
