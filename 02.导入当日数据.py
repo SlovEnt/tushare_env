@@ -101,25 +101,43 @@ def main():
 
     # imp_basic_datas_2_db()
     # imp_by_stock_code_datas_2_db()
-    imp_by_trade_date_datas_2_db("20180101", "20180107")
+    # imp_by_trade_date_datas_2_db("20180101", "20180107")
 
 
 
 
-    # rtnDatas = tp.get_datas_for_db_concept()
-    # for data in rtnDatas:
-    #     tp.proc_main_concept_detail_datas({"inputCode":data["code"],"codeType":"id"})
+    rtnDatas = tp.get_datas_for_db_concept()
+    for data in rtnDatas:
+        tp.proc_main_concept_detail_datas({"inputCode":data["code"],"codeType":"id"})
 
-    # rtnDatas = tp.get_datas_for_db_sys_dict("market")
-    # for data in rtnDatas:
-    #     tp.proc_main_index_basic_datas({"inputCode":data["dict_item"],"codeType":"market"})
+    rtnDatas = tp.get_datas_for_db_sys_dict("market")
+    for data in rtnDatas:
+        tp.proc_main_index_basic_datas({"inputCode":data["dict_item"],"codeType":"market"})
+
+
+    rtnDatas = tp.get_datas_for_db_sys_dict("item")
+    for data in rtnDatas:
+        tp.proc_main_tmt_twincome_datas({"inputCode":data["dict_item"], "codeType": "item"})
+        tp.proc_main_tmt_twincomedetail_datas({"inputCode":data["dict_item"], "codeType": "item"})
 
     # 需要送ts_code入参 待完成双入参
-    # tp.proc_main_index_daily_datas({"inputCode": "20181106", "codeType": "trade_date"})
+    rtnDatas = tp.get_datas_for_db_index_basic()
+    yyyyDict = [
+        ["20100101","20101231"],
+        ["20110101","20111231"],
+        ["20120101","20121231"],
+        ["20130101","20131231"],
+        ["20140101","20141231"],
+        ["20150101","20151231"],
+        ["20160101","20161231"],
+        ["20170101","20171231"],
+        ["20180101","20181231"],
+    ]
+    for data in rtnDatas:
+        for yyyy in yyyyDict :
+            # print(yyyy)
+            tp.proc_main_index_daily_datas({"inputCode": data["ts_code"], "codeType": "ts_code","startDate":yyyy[0], "endDate":yyyy[1]})
 
-
-    # tp.proc_main_tmt_twincome_datas({"inputCode": "1", "codeType": "item"})
-    # tp.proc_main_tmt_twincomedetail_datas({"inputCode": "1", "codeType": "item"})
 
 
 if __name__ == '__main__':

@@ -136,26 +136,32 @@ PRIMARY KEY (busi_date)
 
 def main():
 
-    url_main = 'https://tushare.pro/document/2?doc_id=94'
-    html = get_html_text(url_main)
-    soup = BeautifulSoup(html, 'lxml')
+    url_main = [
+       [ 'https://tushare.pro/document/2?doc_id=94','market','市场说明'],
+       [ 'https://tushare.pro/document/2?doc_id=88','item','产品代码列表'],
+       [ 'https://tushare.pro/document/2?doc_id=87','symbol','公司代码'],
+    ]
 
-    tableList = soup.find_all('table')[2].tbody
+    for url in url_main:
+        html = get_html_text(url[0])
+        soup = BeautifulSoup(html, 'lxml')
 
-    rowList = tableList.find_all("tr")  # 定位所有的tr
+        tableList = soup.find_all('table')[2].tbody
 
-    for row in rowList:
-        fieldInfo = row.find_all("td")
-        # print(fieldInfo)
+        rowList = tableList.find_all("tr")  # 定位所有的tr
 
-        fieldName = fieldInfo[0].contents[0]
-        fieldType = fieldInfo[1].contents[0]
-        #
-        # print(fieldName, fieldType)
+        for row in rowList:
+            fieldInfo = row.find_all("td")
+            # print(fieldInfo)
 
-        strSql = "INSERT INTO `sys_dict` (`dict_id`, `dict_item`, `dict_item_sl`, `dict_item_spf`) VALUES ('market', '{0}', '{1}', '市场说明');".format(fieldName, fieldType)
-        print(strSql)
-        mysqlExe.execute(strSql)
+            fieldName = fieldInfo[0].contents[0]
+            fieldType = fieldInfo[1].contents[0]
+            #
+            # print(fieldName, fieldType)
+
+            strSql = "INSERT INTO `sys_dict` (`dict_id`, `dict_item`, `dict_item_sl`, `dict_item_spf`) VALUES ('{2}', '{0}', '{1}', '{3}');".format(fieldName, fieldType, url[1],url[2])
+            print(strSql)
+            mysqlExe.execute(strSql)
 
 
 

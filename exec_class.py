@@ -202,6 +202,18 @@ class Tushare_Proc(object):
         except:
             return False
 
+    def get_datas_for_db_index_basic(self):
+        try:
+            strSql = "select ts_code from index_basic order by ts_code"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+
 
     #################################################################
 
@@ -1232,13 +1244,15 @@ class Tushare_Proc(object):
         # print(argsDict)
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
+        startDate = argsDict["startDate"]
+        endDate = argsDict["endDate"]
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
 
             if codeType == "ts_code":
-                df = self.pro.index_daily(ts_code='{0}'.format(inputCode))
+                df = self.pro.index_daily(ts_code='{0}'.format(inputCode), start_date='{0}'.format(startDate), end_date='{0}'.format(endDate))
             elif codeType == "trade_date":
                 df = self.pro.index_daily(trade_date='{0}'.format(inputCode))
             else:
