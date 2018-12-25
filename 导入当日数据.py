@@ -19,7 +19,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_INFO_FILE = "%s/%s" % (BASE_DIR, "Config.ini")
 PARAINFO = get_param_info(CONFIG_INFO_FILE)
 
-
 # 引入mysql操作函数
 mysqlExe = torndb.Connection(
     host = "{0}:{1}".format(PARAINFO["DB_HOST"], PARAINFO["DB_PORT"]),
@@ -46,6 +45,7 @@ def imp_basic_datas_2_db():
     tp.proc_main_fund_basic_datas({"inputCode": "O", "codeType": "market"})
 
 def imp_by_stock_code_datas_2_db():
+
     stockCodeList = tp.get_datas_for_db_stock_basic()
     if stockCodeList is False:
         return False
@@ -94,17 +94,13 @@ def imp_by_trade_date_datas_2_db(begDate, endDate):
         tp.proc_main_bo_daily_datas({"inputCode": "{0}".format(tradeDate), "codeType": "date"})
         tp.proc_main_bo_cinema_datas({"inputCode": "{0}".format(tradeDate), "codeType": "date"})
 
-
 def main():
 
     print(tp.get_table_field_list("hsgt_top10"))
 
     # imp_basic_datas_2_db()
-    # imp_by_stock_code_datas_2_db()
+    imp_by_stock_code_datas_2_db()
     # imp_by_trade_date_datas_2_db("20180101", "20180107")
-
-
-
 
     rtnDatas = tp.get_datas_for_db_concept()
     for data in rtnDatas:
@@ -137,7 +133,6 @@ def main():
         for yyyy in yyyyDict :
             # print(yyyy)
             tp.proc_main_index_daily_datas({"inputCode": data["ts_code"], "codeType": "ts_code","startDate":yyyy[0], "endDate":yyyy[1]})
-
 
 
 if __name__ == '__main__':

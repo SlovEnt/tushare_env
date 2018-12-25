@@ -75,6 +75,16 @@ class Tushare_Proc(object):
         except:
             return False
 
+    def delete_collect_flag(self, tableName, key_word, key_detail):
+        try:
+            strSql = "delete from {0} where {1} = '{2}'".format(tableName, key_word, key_detail)
+            self.mysqlExe.execute(strSql)
+            strSql = "delete from collect_flag where func_name = '{0}' and key_word = '{1}' and key_detail = '{2}' and collect_date = '{3}'".format(tableName, key_word, key_detail, self.busiDate)
+            self.mysqlExe.execute(strSql)
+            return True
+        except:
+            return False
+
     def insert_new_datas_2_db(self, tableName, datas, datasType, busiDateFlag):
 
         floatFileds = []
@@ -256,13 +266,27 @@ class Tushare_Proc(object):
         except Exception as e:
             print(e)
 
-    def proc_main_trade_cal_datas(self, startDate, endDate):
+    def proc_main_trade_cal_datas(self):
         '''
         股票列表
         接口：trade_cal
         描述：获取各大交易所交易日历数据,默认提取的是上交所
         '''
         tableName = "trade_cal"
+
+        # 判断当前日期是否大于YYYY1220日 如果大于，则开始获取下一年度交易日历
+        yyyy = time.strftime("%Y")
+
+        mmdd = time.strftime('%m%d')
+
+        yyyyNext = int(yyyy) + 1
+
+        if int(mmdd) > 1220:
+            startDate = "%s1201" % yyyy # 为防止当年最后几天被调整为节假日 需要多取一个月的日期
+            endDate = "%s1231" % yyyyNext
+        else:
+            return ""
+
         df = self.pro.trade_cal(exchange='', start_date=startDate, end_date=endDate)
         df = df.fillna(value=0)
         datas = df.to_dict("records")
@@ -338,6 +362,31 @@ class Tushare_Proc(object):
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, trdDate))
 
+    # def proc_main_get_daily(self, argsDict):
+    #     '''
+    #     日线行情
+    #     接口：daily
+    #     更新时间：交易日每天15点～16点之间
+    #     描述：获取股票行情数据，或通过通用行情接口获取数据，包含了前后复权数据．
+    #     '''
+    #     tableName = "daily"
+    #     df = self.pro.daily(trade_date=trdDate)
+    #     df = df.fillna(value=0)
+    #     datas = df.to_dict("records")
+    #
+    #     rtnMsg = self.select_collect_flag(tableName, 'trade_date', trdDate)
+    #
+    #     if len(datas) != 0 and rtnMsg is True:
+    #
+    #         dataType = self.get_table_column_data_type(tableName)
+    #         try:
+    #             self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+    #             self.insert_collect_flag(tableName, 'trade_date', trdDate)
+    #         except Exception as e:
+    #             print(e)
+    #     else:
+    #         print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, trdDate))
+
     def proc_main_adj_factor_datas(self, argsDict):
         '''
         复权因子
@@ -349,6 +398,9 @@ class Tushare_Proc(object):
         # print(argsDict)
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         if codeType == "ts_code":
             df = self.pro.adj_factor(ts_code='{0}'.format(inputCode), trade_date='')
@@ -382,7 +434,12 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
-        df = self.pro.suspend(ts_code='{0}'.format(inputCode), suspend_date='', resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
+        if codeType == "suspend_date":
+            df = self.pro.suspend(ts_code='', suspend_date='{0}'.format(inputCode), resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
+        elif codeType == "resume_date":
+            df = self.pro.suspend(ts_code='', suspend_date='', resume_date='{0}'.format(inputCode), fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
+        else:
+            df = self.pro.suspend(ts_code='{0}'.format(inputCode), suspend_date='', resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -410,6 +467,9 @@ class Tushare_Proc(object):
         # print(argsDict)
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         if codeType == "ts_code":
             df = self.pro.daily_basic(ts_code='{0}'.format(inputCode), trade_date='')
@@ -763,6 +823,9 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
@@ -799,14 +862,56 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
 
             if codeType == "ts_code":
-                df = self.pro.hsgt_top10(ts_code='{0}'.format(inputCode), fields="trade_date,ts_code,name,close,p_change,rank,market_type,amount,net_amount,buy,sell")
+                df = self.pro.hsgt_top10(ts_code='{0}'.format(inputCode))
             elif codeType == "trade_date":
-                df = self.pro.hsgt_top10(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode), fields="trade_date,ts_code,name,close,p_change,rank,market_type,amount,net_amount,buy,sell")
+                df = self.pro.hsgt_top10(ts_code='', trade_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_ggt_top10_datas(self, argsDict):
+        '''
+        港股通十大成交股
+        接口：ggt_top10
+        描述：获取港股通每日成交数据，其中包括沪市、深市详细数据
+        '''
+        tableName = "ggt_top10"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.ggt_top10(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.ggt_top10(ts_code='', trade_date='{0}'.format(inputCode))
 
             time.sleep(2.5)
 
@@ -835,6 +940,9 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
@@ -842,7 +950,46 @@ class Tushare_Proc(object):
             if codeType == "ts_code":
                 df = self.pro.margin_detail(ts_code='{0}'.format(inputCode))
             elif codeType == "trade_date":
-                df = self.pro.margin_detail(ts_code='', trade_date='{0}'.format(inputCode))
+                df = self.pro.margin_detail(trade_date='{0}'.format(inputCode))
+
+            time.sleep(2.5)
+
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_margin_datas(self, argsDict):
+        '''
+        融资融券交易汇总
+        接口：margin
+        描述：获取融资融券每日交易汇总数据
+        '''
+        tableName = "margin"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.margin_detail(ts_code='{0}'.format(inputCode))
+            elif codeType == "trade_date":
+                df = self.pro.margin(trade_date='{0}'.format(inputCode))
 
             time.sleep(2.5)
 
@@ -946,6 +1093,9 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
@@ -983,6 +1133,9 @@ class Tushare_Proc(object):
         # print(argsDict)
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
