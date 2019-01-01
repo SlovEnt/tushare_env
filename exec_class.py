@@ -1900,3 +1900,46 @@ class Tushare_Proc(object):
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
+
+    # -- 直接通过接口返回数据 --
+
+    def proc_rtn_datas_stock_code(self):
+        '''
+        股票列表
+        接口：stock_basic
+        描述：获取基础信息数据，包括股票代码、名称、上市日期、退市日期等
+        '''
+        # print(tp.get_table_field_list("stock_basic"))
+        try:
+            stockInfoList = self.pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,fullname,enname,market,exchange,curr_type,list_status,list_date,delist_date,'
+                                                                                   'is_hs')
+            df = stockInfoList.fillna(value=0)
+
+            for indexs in df.index:
+                # print(indexs)
+                # xdata = df.loc[indexs].values[0:-1]
+                xdata = df.loc[indexs].values[0:-1]
+                xdata1 = df.columns
+                for x in xdata1:
+                    print(x)
+                # print(xdata)
+                # dd = xdata[2]
+                # print(dd)
+
+            # stime = df.timeToMarket
+
+            # print(df["ts_code"][0])
+
+            # print(str(df["ts_code"]))
+
+            # code = df["ts_code"].isin(["000005.SZ"])
+            # print(type(code))
+
+            # if "000005.SZ" == str(df.ts_code):
+            #     print(df.name)
+
+
+        except Exception as e:
+            print(e)
+            return False
+

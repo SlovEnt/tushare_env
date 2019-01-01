@@ -78,17 +78,15 @@ def main():
     argsDict["inputCode"] = "20181224"
 
     argsDict["codeType"] = "trade_date"
-    # tp.proc_main_daily_basic_datas(argsDict)
-    # tp.proc_main_adj_factor_datas(argsDict)
-    # tp.proc_main_moneyflow_hsgt_datas(argsDict)
-    # tp.proc_main_hsgt_top10_datas(argsDict)
-    # tp.proc_main_ggt_top10_datas(argsDict)
-    # tp.proc_main_margin_detail_datas(argsDict)
-    # tp.proc_main_margin_datas(argsDict)
-    # tp.proc_main_top_list_datas(argsDict)
+    tp.proc_main_daily_basic_datas(argsDict)
+    tp.proc_main_adj_factor_datas(argsDict)
+    tp.proc_main_moneyflow_hsgt_datas(argsDict)
+    tp.proc_main_hsgt_top10_datas(argsDict)
+    tp.proc_main_ggt_top10_datas(argsDict)
+    tp.proc_main_margin_detail_datas(argsDict)
+    tp.proc_main_margin_datas(argsDict)
+    tp.proc_main_top_list_datas(argsDict)
     tp.proc_main_top_inst_datas(argsDict)
-
-
 
     # argsDict["codeType"] = "suspend_date"
     # tp.proc_main_suspend_datas(argsDict)
@@ -114,4 +112,5 @@ def main():
 
 
 if __name__ == '__main__':
+
     main()
