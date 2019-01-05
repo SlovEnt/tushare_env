@@ -34,7 +34,7 @@ tp = Tushare_Proc(pro, mysqlExe)
 
 
 def get_trade_cal():
-    tradeCalInfo = pro.trade_cal(exchange='', start_date='20180101', end_date='20181231')
+    tradeCalInfo = pro.trade_cal(exchange='', start_date='20190101', end_date='20190103')
     datas = tradeCalInfo.to_dict("records")
     return datas
 
@@ -47,6 +47,11 @@ if __name__ == '__main__':
             continue
 
         tp.proc_main_daily_datas(tradeCalInfo["cal_date"])
+        argsDict = {}
+        argsDict["inputCode"] = tradeCalInfo["cal_date"]
+        argsDict["codeType"] = "trade_date"
+        argsDict["recollect"] = "1"
+        tp.proc_main_daily_basic_datas(argsDict)
 
     # insert_ts_daily_2_db()
 

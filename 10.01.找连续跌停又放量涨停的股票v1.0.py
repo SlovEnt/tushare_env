@@ -36,6 +36,23 @@ tp = Tushare_Proc(pro, mysqlExe)
 #*/
 nDay = 100
 
+'''
+SELECT
+	ts_code,
+	count(*)
+FROM
+	daily a
+WHERE
+	0 = 0
+AND pct_chg BETWEEN -11 AND -9
+AND trade_date BETWEEN 20181201 AND 20181231
+GROUP BY
+	ts_code
+HAVING
+	count(*) > 3
+;
+'''
+
 def run_down_and_up():
     '''
     思路
@@ -52,25 +69,7 @@ def run_down_and_up():
     # for stockCode in stockCodeList:
     #     print(stockCode)
 
-'''
 
-SELECT
-	ts_code,
-	count(*)
-FROM
-	daily a
-WHERE
-	0 = 0
-AND pct_chg BETWEEN -11 AND -9
-AND trade_date BETWEEN 20181201 AND 20181231
-GROUP BY
-	ts_code
-HAVING
-	count(*) > 3
-;
-
-
-'''
 
 
 if __name__ == '__main__':
