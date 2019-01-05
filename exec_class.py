@@ -1286,6 +1286,9 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
@@ -1303,7 +1306,7 @@ class Tushare_Proc(object):
 
                 dataType = self.get_table_column_data_type(tableName)
                 try:
-                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, 0, 0)
                     self.mysqlExe.execute(strSql)
                     self.insert_new_datas_2_db(tableName, datas, dataType, "N")
                     self.insert_collect_flag(tableName, codeType, inputCode)
@@ -1324,12 +1327,15 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
 
             if codeType == "id":
-                df = self.pro.concept_detail(id='{0}'.format(inputCode))
+                df = self.pro.concept_detail(id='{0}'.format(inputCode), fields='id, ts_code, name, in_date, out_date')
             else:
                 return False
             time.sleep(2.5)
