@@ -4,6 +4,8 @@ Config.ini
 *.jpg
 __pycache__/
 .idea/
+11.py
+readmw.txt
 
 *.DS_Store
 

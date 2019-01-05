@@ -8,10 +8,13 @@ from collections import OrderedDict
 
 class Tushare_Proc(object):
 
-    def __init__(self, pro, mysqlExe):
+    def __init__(self, pro, mysqlExe, busiDate=None):
         self.pro = pro
         self.mysqlExe = mysqlExe
-        self.busiDate = time.strftime('%Y%m%d', time.localtime(time.time()))
+        if busiDate is False:
+            self.busiDate = time.strftime('%Y%m%d', time.localtime(time.time()))
+        else:
+            self.busiDate = busiDate
 
     def get_table_column_data_type(self, tableName):
         ''' 从数据库中返回字段类型 float类型的字段必须将None改为0 '''
