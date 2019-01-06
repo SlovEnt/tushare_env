@@ -11,7 +11,7 @@ class Tushare_Proc(object):
     def __init__(self, pro, mysqlExe, busiDate=None):
         self.pro = pro
         self.mysqlExe = mysqlExe
-        if busiDate is False:
+        if busiDate is None:
             self.busiDate = time.strftime('%Y%m%d', time.localtime(time.time()))
         else:
             self.busiDate = busiDate
@@ -80,8 +80,9 @@ class Tushare_Proc(object):
 
     def delete_collect_flag(self, tableName, key_word, key_detail):
         try:
-            strSql = "delete from {0} where {1} = '{2}'".format(tableName, key_word, key_detail)
-            self.mysqlExe.execute(strSql)
+            # strSql = "delete from {0} where {1} = '{2}'".format(tableName, key_word, key_detail)
+            # print(strSql)
+            # self.mysqlExe.execute(strSql)
             strSql = "delete from collect_flag where func_name = '{0}' and key_word = '{1}' and key_detail = '{2}' and collect_date = '{3}'".format(tableName, key_word, key_detail, self.busiDate)
             self.mysqlExe.execute(strSql)
             return True
@@ -231,7 +232,7 @@ class Tushare_Proc(object):
     #################################################################
 
 
-    def proc_main_stock_basic_datas(self):
+    def proc_main_stock_basic_datas(self, argsDict):
         '''
         股票列表
         接口：stock_basic
@@ -239,18 +240,32 @@ class Tushare_Proc(object):
         '''
         # print(tp.get_table_field_list("stock_basic"))
         tableName = "stock_basic"
-        df = self.pro.stock_basic(exchange='', list_status='', fields='ts_code,symbol,name,area,industry,fullname,enname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs')
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
-        dataType = []
-        try:
-            self.truncate_table(tableName)
-            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
-        except Exception as e:
-            print(e)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
 
-    def proc_main_stock_company_datas(self):
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            df = self.pro.stock_basic(exchange='', list_status='', fields='ts_code,symbol,name,area,industry,fullname,enname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs')
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+            dataType = []
+            try:
+                self.truncate_table(tableName)
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_stock_company_datas(self, argsDict):
         '''
         上市公司基本信息
         接口：stock_company
@@ -258,18 +273,35 @@ class Tushare_Proc(object):
         积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
         '''
         tableName = "stock_company"
-        df = self.pro.stock_company(exchange='', fields='ts_code,exchange,chairman,manager,secretary,reg_capital,setup_date,province,city,introduction,website,email,office,employees,main_business,business_scope')
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
-        dataType = self.get_table_column_data_type(tableName)
-        try:
-            self.truncate_table(tableName)
-            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
-        except Exception as e:
-            print(e)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
 
-    def proc_main_trade_cal_datas(self):
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+            df = self.pro.stock_company(exchange='{0}'.format(inputCode), fields='ts_code,exchange,chairman,manager,secretary,reg_capital,setup_date,province,city,introduction,website,email,office,employees,'
+                                                             'main_business,business_scope')
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+            dataType = self.get_table_column_data_type(tableName)
+            try:
+                # self.truncate_table(tableName)
+                strSql = "delete from stock_company where exchange = '{0}'".format(inputCode)
+                # strSql = "delete from trade_cal where cal_date between {0} and {1}".format("20180101", "20191231")
+                self.mysqlExe.execute(strSql)
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_trade_cal_datas(self,):
         '''
         股票列表
         接口：trade_cal
@@ -288,59 +320,124 @@ class Tushare_Proc(object):
             startDate = "%s1201" % yyyy # 为防止当年最后几天被调整为节假日 需要多取一个月的日期
             endDate = "%s1231" % yyyyNext
         else:
+            print("接口名称：{0} ，不在指定采集时间范围内(>{1}1220)，无需再次采集！".format(tableName, yyyy))
             return ""
 
         df = self.pro.trade_cal(exchange='', start_date=startDate, end_date=endDate)
+        # df = self.pro.trade_cal(exchange='', start_date="20180101", end_date="20191231")
         df = df.fillna(value=0)
         datas = df.to_dict("records")
         dataType = []
         try:
             strSql = "delete from trade_cal where cal_date between {0} and {1}".format(startDate, endDate)
+            # strSql = "delete from trade_cal where cal_date between {0} and {1}".format("20180101", "20191231")
             self.mysqlExe.execute(strSql)
             self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
         except Exception as e:
             print(e)
 
-    def proc_main_hs_const_datas(self, hsType):
+    def proc_main_namechange_datas(self, argsDict):
+        '''
+        股票曾用名
+        接口：namechange
+        描述：历史名称变更记录
+        '''
+        tableName = "namechange"
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            df = self.pro.namechange()
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    self.truncate_table(tableName)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_hs_const_datas(self, argsDict):
         '''
         沪深股通成份股
         接口：hs_const
         描述：获取沪股通、深股通成分数据
         '''
         tableName = "hs_const"
-        df = self.pro.hs_const(hs_type=hsType)
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
-        dataType = []
-        try:
-            strSql = "delete from hs_const where hs_type = '{0}'".format(hsType)
-            self.mysqlExe.execute(strSql)
-            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
-        except Exception as e:
-            print(e)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
 
-    def proc_main_new_share_datas(self):
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+            df = self.pro.hs_const(hs_type=inputCode)
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+            dataType = []
+            try:
+                strSql = "delete from hs_const where hs_type = '{0}'".format(inputCode)
+                self.mysqlExe.execute(strSql)
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_new_share_datas(self, argsDict):
         '''
         接口：new_share
         描述：获取新股上市列表数据
         限量：单次最大2000条，总量不限制
         积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
         '''
+
         tableName = "new_share"
-        df = self.pro.new_share()
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
-        dataType = []
-        try:
-            self.truncate_table(tableName)
-            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
 
-        except Exception as e:
-            print(e)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
 
-    def proc_main_daily_datas(self, trdDate):
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            df = self.pro.new_share()
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+            dataType = []
+            try:
+                self.truncate_table(tableName)
+                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_daily_datas(self, argsDict):
         '''
         日线行情
         接口：daily
@@ -348,47 +445,36 @@ class Tushare_Proc(object):
         描述：获取股票行情数据，或通过通用行情接口获取数据，包含了前后复权数据．
         '''
         tableName = "daily"
-        df = self.pro.daily(trade_date=trdDate)
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
 
-        rtnMsg = self.select_collect_flag(tableName, 'trade_date', trdDate)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
 
-        if len(datas) != 0 and rtnMsg is True:
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, 'trade_date', trdDate)
-            except Exception as e:
-                print(e)
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            if codeType == "ts_code":
+                df = self.pro.daily(ts_code=inputCode)
+            elif codeType == "trade_date":
+                df = self.pro.daily(trade_date=inputCode)
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+
+            if len(datas) != 0:
+
+                dataType = self.get_table_column_data_type(tableName)
+                try:
+                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+                    self.mysqlExe.execute(strSql)
+                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
+                except Exception as e:
+                    print(e)
         else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, trdDate))
-
-    # def proc_main_get_daily(self, argsDict):
-    #     '''
-    #     日线行情
-    #     接口：daily
-    #     更新时间：交易日每天15点～16点之间
-    #     描述：获取股票行情数据，或通过通用行情接口获取数据，包含了前后复权数据．
-    #     '''
-    #     tableName = "daily"
-    #     df = self.pro.daily(trade_date=trdDate)
-    #     df = df.fillna(value=0)
-    #     datas = df.to_dict("records")
-    #
-    #     rtnMsg = self.select_collect_flag(tableName, 'trade_date', trdDate)
-    #
-    #     if len(datas) != 0 and rtnMsg is True:
-    #
-    #         dataType = self.get_table_column_data_type(tableName)
-    #         try:
-    #             self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-    #             self.insert_collect_flag(tableName, 'trade_date', trdDate)
-    #         except Exception as e:
-    #             print(e)
-    #     else:
-    #         print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, trdDate))
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
     def proc_main_adj_factor_datas(self, argsDict):
         '''
@@ -405,26 +491,31 @@ class Tushare_Proc(object):
         if argsDict["recollect"] == "1":
             self.delete_collect_flag(tableName, codeType, inputCode)
 
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
         if codeType == "ts_code":
             df = self.pro.adj_factor(ts_code='{0}'.format(inputCode), trade_date='')
         elif codeType == "trade_date":
             df = self.pro.adj_factor(ts_code='', trade_date='{0}'.format(inputCode))
-
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
-        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-        if len(datas) != 0 and rtnMsg is True:
-
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, codeType, inputCode)
-            except Exception as e:
-                print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_suspend_datas(self, argsDict):
         '''
@@ -437,6 +528,15 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
         if codeType == "suspend_date":
             df = self.pro.suspend(ts_code='', suspend_date='{0}'.format(inputCode), resume_date='', fiedls='ts_code,suspend_date,resume_date,ann_date,suspend_reason,reason_type')
         elif codeType == "resume_date":
@@ -446,18 +546,18 @@ class Tushare_Proc(object):
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
-        rtnMsg = self.select_collect_flag(tableName, 'ts_code', inputCode)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-        if len(datas) != 0 and rtnMsg is True:
-
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, 'ts_code', inputCode)
-            except Exception as e:
-                print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_daily_basic_datas(self, argsDict):
         '''
@@ -474,26 +574,31 @@ class Tushare_Proc(object):
         if argsDict["recollect"] == "1":
             self.delete_collect_flag(tableName, codeType, inputCode)
 
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
         if codeType == "ts_code":
             df = self.pro.daily_basic(ts_code='{0}'.format(inputCode), trade_date='')
         elif codeType == "trade_date":
             df = self.pro.daily_basic(ts_code='', trade_date='{0}'.format(inputCode))
-
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
-        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-        if len(datas) != 0 and rtnMsg is True:
-
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, codeType, inputCode)
-            except Exception as e:
-                print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_income_datas(self, argsDict):
         '''
@@ -507,26 +612,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
-        if codeType == "ts_code":
-            df = self.pro.income(ts_code='{0}'.format(inputCode), start_date='', end_date='')
-        elif codeType == "trade_date":
-            df = self.pro.income(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
-
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if len(datas) != 0 and rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, codeType, inputCode)
-            except Exception as e:
-                print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        if codeType == "ts_code":
+            df = self.pro.income(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.income(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_balancesheet_datas(self, argsDict):
         '''
@@ -540,26 +653,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
-        if codeType == "ts_code":
-            df = self.pro.balancesheet(ts_code='{0}'.format(inputCode), start_date='', end_date='')
-        elif codeType == "trade_date":
-            df = self.pro.balancesheet(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
-
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if len(datas) != 0 and rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, codeType, inputCode)
-            except Exception as e:
-                print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        if codeType == "ts_code":
+            df = self.pro.balancesheet(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.balancesheet(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_cashflow_datas(self, argsDict):
         '''
@@ -573,26 +694,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
-        if codeType == "ts_code":
-            df = self.pro.cashflow(ts_code='{0}'.format(inputCode), start_date='', end_date='')
-        elif codeType == "trade_date":
-            df = self.pro.cashflow(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
-
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if len(datas) != 0 and rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            dataType = self.get_table_column_data_type(tableName)
-            try:
-                self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                self.insert_collect_flag(tableName, codeType, inputCode)
-            except Exception as e:
-                print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        if codeType == "ts_code":
+            df = self.pro.cashflow(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.cashflow(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_forecast_datas(self, argsDict):
         '''
@@ -606,30 +735,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.forecast(ts_code='{0}'.format(inputCode), start_date='', end_date='')
-            elif codeType == "trade_date":
-                df = self.pro.forecast(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.forecast(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.forecast(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_express_datas(self, argsDict):
         '''
@@ -643,30 +776,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.express(ts_code='{0}'.format(inputCode), start_date='', end_date='')
-            elif codeType == "trade_date":
-                df = self.pro.express(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.express(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.express(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_dividend_datas(self, argsDict):
         '''
@@ -680,30 +817,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.dividend(ts_code='{0}'.format(inputCode))
-            elif codeType == "trade_date":
-                df = self.pro.dividend(ts_code='', ann_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.dividend(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.dividend(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_fina_indicator_datas(self, argsDict):
         '''
@@ -717,30 +858,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.fina_indicator(ts_code='{0}'.format(inputCode))
-            elif codeType == "trade_date":
-                df = self.pro.fina_indicator(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.fina_indicator(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.fina_indicator(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_fina_audit_datas(self, argsDict):
         '''
@@ -754,30 +899,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.fina_audit(ts_code='{0}'.format(inputCode), fields="ts_code,ann_date,end_date,audit_result,audit_fees,audit_agency,audit_sign")
-            elif codeType == "trade_date":
-                df = self.pro.fina_audit(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.fina_audit(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.fina_audit(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_fina_mainbz_datas(self, argsDict):
         '''
@@ -791,30 +940,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.fina_mainbz(ts_code='{0}'.format(inputCode), fields="ts_code,end_date,bz_item,bz_sales,bz_profit,bz_cost,curr_type,update_flag")
-            elif codeType == "trade_date":
-                df = self.pro.fina_mainbz(ts_code='', period='{0}'.format(inputCode), fields="ts_code,end_date,bz_item,bz_sales,bz_profit,bz_cost,curr_type,update_flag")
+        if codeType == "ts_code":
+            df = self.pro.fina_mainbz(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.fina_mainbz(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_moneyflow_hsgt_datas(self, argsDict):
         '''
@@ -870,28 +1023,29 @@ class Tushare_Proc(object):
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.hsgt_top10(ts_code='{0}'.format(inputCode))
-            elif codeType == "trade_date":
-                df = self.pro.hsgt_top10(ts_code='', trade_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.hsgt_top10(ts_code='{0}'.format(inputCode))
+        elif codeType == "trade_date":
+            df = self.pro.hsgt_top10(ts_code='', trade_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_ggt_top10_datas(self, argsDict):
         '''
@@ -909,28 +1063,29 @@ class Tushare_Proc(object):
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.ggt_top10(ts_code='{0}'.format(inputCode))
-            elif codeType == "trade_date":
-                df = self.pro.ggt_top10(ts_code='', trade_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.ggt_top10(ts_code='{0}'.format(inputCode))
+        elif codeType == "trade_date":
+            df = self.pro.ggt_top10(ts_code='', trade_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_margin_detail_datas(self, argsDict):
         '''
@@ -1021,30 +1176,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.top10_holders(ts_code='{0}'.format(inputCode))
-            elif codeType == "trade_date":
-                df = self.pro.top10_holders(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.top10_holders(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.top10_holders(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_top10_floatholders_datas(self, argsDict):
         '''
@@ -1057,30 +1216,34 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.top10_floatholders(ts_code='{0}'.format(inputCode))
-            elif codeType == "trade_date":
-                df = self.pro.top10_floatholders(ts_code='', start_date='{0}'.format(inputCode), end_date='{0}'.format(inputCode))
+        if codeType == "ts_code":
+            df = self.pro.top10_floatholders(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.top10_floatholders(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            time.sleep(2.5)
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
-
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_top_list_datas(self, argsDict):
         '''
@@ -1178,29 +1341,114 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.pledge_stat(ts_code='{0}'.format(inputCode))
-            else:
-                return False
-            time.sleep(2.5)
+        if codeType == "ts_code":
+            df = self.pro.pledge_stat(ts_code='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            if len(datas) != 0:
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+    def proc_main_share_float_datas(self, argsDict):
+        '''
+        接口：share_float
+        描述：获取限售股解禁
+        限量：单次最大5000条，总量不限制
+        积分：120分可调取，每分钟内限制次数，超过5000积分无限制，具体请参阅积分获取办法
+        '''
+        tableName = "share_float"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
+        if codeType == "ts_code":
+            df = self.pro.share_float(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.share_float(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+    def proc_main_block_trade_datas(self, argsDict):
+        '''
+        接口：block_trade
+        描述：大宗交易
+        限量：单次最大1000条，总量不限制
+        积分：300积分可调取，每分钟内限制次数，超过5000积分无限制，具体请参阅积分获取办法
+        '''
+        tableName = "block_trade"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
+        if codeType == "ts_code":
+            df = self.pro.block_trade(ts_code='{0}'.format(inputCode))
+        elif codeType == "ann_date":
+            df = self.pro.block_trade(ts_code='', ann_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_pledge_detail_datas(self, argsDict):
         '''
@@ -1215,29 +1463,32 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.pledge_detail(ts_code='{0}'.format(inputCode))
-            else:
-                return False
-            time.sleep(2.5)
+        if codeType == "ts_code":
+            df = self.pro.pledge_detail(ts_code='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_repurchase_datas(self, argsDict):
         '''
@@ -1370,6 +1621,9 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
@@ -1491,6 +1745,9 @@ class Tushare_Proc(object):
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
 
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
@@ -1518,7 +1775,7 @@ class Tushare_Proc(object):
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
-    def proc_main_fund_company_datas(self):
+    def proc_main_fund_company_datas(self, argsDict):
         '''
         公募基金公司
         接口：fund_company
@@ -1527,12 +1784,17 @@ class Tushare_Proc(object):
         '''
         tableName = "fund_company"
 
-        rtnMsg = True
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
         if rtnMsg is True:
 
             df = self.pro.fund_company()
-            time.sleep(2.5)
 
             df = df.fillna(value=0)
             datas = df.to_dict("records")
@@ -1543,8 +1805,11 @@ class Tushare_Proc(object):
                 try:
                     self.truncate_table(tableName)
                     self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+                    self.insert_collect_flag(tableName, codeType, inputCode)
                 except Exception as e:
                     print(e)
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
 
     def proc_main_fund_nav_datas(self, argsDict):
         '''
@@ -1908,6 +2173,88 @@ class Tushare_Proc(object):
                     print(e)
         else:
             print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+    def proc_main_weekly_datas(self, argsDict):
+        '''
+        接口：weekly
+        描述：获取A股周线行情
+        限量：单次最大3700，总量不限制
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "weekly"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
+        if codeType == "ts_code":
+            df = self.pro.weekly(ts_code='{0}'.format(inputCode), trade_date='')
+        elif codeType == "trade_date":
+            df = self.pro.weekly(ts_code='', trade_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+    def proc_main_monthly_datas(self, argsDict):
+        '''
+        接口：monthly
+        描述：获取A股月线数据
+        限量：单次最大3700，总量不限制
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "monthly"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
+        if codeType == "ts_code":
+            df = self.pro.monthly(ts_code='{0}'.format(inputCode), trade_date='')
+        elif codeType == "trade_date":
+            df = self.pro.monthly(ts_code='', trade_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
 
     # -- 直接通过接口返回数据 --

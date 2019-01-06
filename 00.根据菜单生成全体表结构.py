@@ -71,8 +71,11 @@ def parse_html_sub_page_url(html):
 def generate_sub_table_sql(subPageUrl, subTitle):
     html = get_html_text(subPageUrl)
     soup = BeautifulSoup(html, 'lxml')
-    tableNameRe = "<p>(接口|接口名称)：(.+?)<br/>"
-    tableName = re.findall(tableNameRe, str(soup))[0][1]
+    # tableNameRe = "<p>(接口|接口名称)：(.+?)<br/>"
+    # tableName = re.findall(tableNameRe, str(soup))[0][1]
+    tableNameRe = "(<p>|<strong>)(接口|接口名称|接口名称.+?)：(.+?)(</strong>|<br/>)"
+    # print(re.findall(tableNameRe, str(soup)))
+    tableName = re.findall(tableNameRe, str(soup))[0][2]
 
     strSql = "show tables like '%s'; " % tableName
 
@@ -132,6 +135,8 @@ PRIMARY KEY (busi_date)
 
     strSql = strSql % fieldStrSql
 
+    print(strSql)
+
     return strSql,len(rtnDatas)
 
 def main():
@@ -149,8 +154,8 @@ def main():
 
         strSql,cnt = generate_sub_table_sql(subPageUrl, subTitle)
 
-        if cnt == 0:
-            mysqlExe.execute(strSql.replace("%","%%"))
+        # if cnt == 0:
+        #     mysqlExe.execute(strSql.replace("%","%%"))
 
 
 
