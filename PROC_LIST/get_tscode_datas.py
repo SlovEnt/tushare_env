@@ -190,7 +190,7 @@ def proc_main_share_float_datas(tsCode):
 
 def proc_main_block_trade_datas(tsCode):
     argsDict = {}
-    argsDict["recollect"] = "1"
+    argsDict["recollect"] = "0"
     argsDict["codeType"] = "ts_code"
     argsDict["inputCode"] = tsCode
     tp.proc_main_block_trade_datas(argsDict)

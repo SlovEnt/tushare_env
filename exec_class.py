@@ -2256,6 +2256,44 @@ class Tushare_Proc(object):
         except Exception as e:
             print(e)
 
+    def proc_main_opt_basic_datas(self, argsDict):
+        '''
+        接口：opt_basic
+        描述：获取期权合约信息
+        积分：用户需要至少200积分才可以调取，但有流量控制，请自行提高积分，积分越多权限越大，具体请参阅积分获取办法
+        '''
+        tableName = "opt_basic"
+        # print(argsDict)
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
+
+        if codeType == "exchange":
+            df = self.pro.opt_basic(exchange='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
 
     # -- 直接通过接口返回数据 --
 

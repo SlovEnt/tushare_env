@@ -112,6 +112,16 @@ def proc_main_fund_company_datas():
     argsDict["inputCode"] = ""
     tp.proc_main_fund_company_datas(argsDict)
 
+def proc_main_opt_basic_datas():
+
+    sysDict = tp.get_datas_for_db_sys_dict("market")
+    for x in sysDict:
+        argsDict = {}
+        argsDict["recollect"] = "0"
+        argsDict["codeType"] = "exchange"
+        argsDict["inputCode"] = x["dict_item"]
+        tp.proc_main_opt_basic_datas(argsDict)
+
 
 
 
@@ -119,16 +129,17 @@ def run_main():
 
     p = Pool(5)
 
-    p.apply_async(proc_main_stock_basic_datas,)
-    p.apply_async(proc_main_trade_cal_datas,)
-    p.apply_async(proc_main_stock_company_datas,)
-    p.apply_async(proc_main_namechange_datas,)
-    p.apply_async(proc_main_hs_const_datas,)
-    p.apply_async(proc_main_new_share_datas,)
-    p.apply_async(proc_main_concept_datas,)
-    p.apply_async(proc_main_index_basic_datas,)
-    p.apply_async(proc_main_fund_basic_datas,)
-    p.apply_async(proc_main_fund_company_datas,)
+    # p.apply_async(proc_main_stock_basic_datas,)
+    # p.apply_async(proc_main_trade_cal_datas,)
+    # p.apply_async(proc_main_stock_company_datas,)
+    # p.apply_async(proc_main_namechange_datas,)
+    # p.apply_async(proc_main_hs_const_datas,)
+    # p.apply_async(proc_main_new_share_datas,)
+    # p.apply_async(proc_main_concept_datas,)
+    # p.apply_async(proc_main_index_basic_datas,)
+    # p.apply_async(proc_main_fund_basic_datas,)
+    # p.apply_async(proc_main_fund_company_datas,)
+    p.apply_async(proc_main_opt_basic_datas,)
 
     p.close()
     p.join()
