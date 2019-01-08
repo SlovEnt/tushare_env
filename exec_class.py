@@ -6,6 +6,356 @@ import time
 import os
 from collections import OrderedDict
 
+
+class Tushare_Proc_v2(object):
+    '''
+
+    '''
+    def __init__(self, pro, mysqlExe, busiDate=None):
+        self.pro = pro
+        self.mysqlExe = mysqlExe
+        if busiDate is None:
+            self.busiDate = time.strftime('%Y%m%d', time.localtime(time.time()))
+        else:
+            self.busiDate = busiDate
+
+    def get_table_column_data_type(self, tableName):
+        ''' 从数据库中返回字段类型 float类型的字段必须将None改为0 '''
+        strSql = "select column_name,data_type from information_schema.columns where table_name='{0}'".format(tableName)
+        try:
+            rtnDataType = self.mysqlExe.query(strSql)
+            return rtnDataType
+        except:
+            return False
+
+    def get_table_field_list(self, tableName):
+
+        rtnDict = OrderedDict()
+
+        strSql = """
+            SELECT
+                column_name
+            FROM
+                information_schema. COLUMNS
+            WHERE
+                0 = 0
+            AND table_schema = 'tushare_datas'
+            AND table_name = '%s'
+        """ % tableName
+
+        rtnDatas = self.mysqlExe.query(strSql)
+
+        strFieldList = ""
+        for x in rtnDatas:
+            if x["column_name"] == "busi_date":
+                continue
+
+            if strFieldList == "":
+                strFieldList = "%s" % (x["column_name"])
+            else:
+                strFieldList = "%s,%s" % (strFieldList, x["column_name"])
+
+        rtnDict["StrFieldList"] = strFieldList
+
+        return rtnDict
+
+    def truncate_table(self,tableName):
+        strSql = "truncate table {0};".format(tableName)
+        self.mysqlExe.execute(strSql)
+
+    def select_collect_flag(self, tableName, key_word, key_detail):
+        strSql = "select count(*) as cnt from collect_flag a where a.func_name='%s' and a.key_word='%s' and a.key_detail='%s' and a.collect_date='%s'" % (
+        tableName, key_word, key_detail, self.busiDate)
+        rtnCnt = self.mysqlExe.query(strSql)
+        if rtnCnt[0]["cnt"] == 0:
+            return True
+        else:
+            return False
+
+    def insert_collect_flag(self, tableName, key_word, key_detail):
+        try:
+            strSql = "insert into collect_flag(`func_name`, `key_word`, `key_detail`, `flag`, `collect_date`) VALUES ('%s', '%s', '%s', '%s', '%s')" % (
+            tableName, key_word, key_detail, "Y", self.busiDate)
+            self.mysqlExe.execute(strSql)
+            return True
+        except:
+            return False
+
+    def delete_collect_flag(self, tableName, key_word, key_detail):
+        try:
+            # strSql = "delete from {0} where {1} = '{2}'".format(tableName, key_word, key_detail)
+            # print(strSql)
+            # self.mysqlExe.execute(strSql)
+            strSql = "delete from collect_flag where func_name = '{0}' and key_word = '{1}' and key_detail = '{2}' and collect_date = '{3}'".format(tableName, key_word, key_detail, self.busiDate)
+            self.mysqlExe.execute(strSql)
+            return True
+        except:
+            return False
+
+    def insert_new_datas_2_db(self, tableName, datas, datasType, busiDateFlag):
+
+        floatFileds = []
+
+        for dt in datasType:
+            if dt["data_type"] == "float" or dt["data_type"] == "int":
+                floatFileds.append(dt["column_name"])
+
+        for rowItem in datas:
+            strSqlRowFeld = ""
+            strSqlRowValue = ""
+            for k, v in rowItem.items():
+                if strSqlRowFeld == "" and busiDateFlag == "Y":
+                    strSqlRowFeld = "`busi_date`, `{0}`".format(k)
+                elif strSqlRowFeld == "" and busiDateFlag == "N":
+                    strSqlRowFeld = "`{0}`".format(k)
+                else:
+                    strSqlRowFeld = "{0}, `{1}`".format(strSqlRowFeld, k)
+
+                # if str(type(v)) == float and v >= 0:
+                #     v = v
+                # elif str(v) == "nan":
+                #     v = 0
+                if k in floatFileds and v is None:
+                    v = 0
+                elif v is None:
+                    v = ""
+
+                if strSqlRowValue == "" and busiDateFlag == "Y":
+                    strSqlRowValue = "'{0}','{1}'".format(self.busiDate, v)
+                elif strSqlRowValue == "" and busiDateFlag == "N":
+                    strSqlRowValue = "'{0}'".format(v)
+                else:
+                    ''' 特殊字符处理 转换类型 '''
+                    if "'" in str(v):
+                        v = v.replace("'", "''")
+                    if "%" in str(v):
+                        v = v.replace("%", "%%")
+                    strSqlRowValue = "{0}, '{1}'".format(strSqlRowValue, v)
+
+            strSql = "INSERT INTO {0} ({1}) VALUES ({2})".format(tableName, strSqlRowFeld, strSqlRowValue)
+
+            print( strSql)
+            try:
+                self.mysqlExe.execute(strSql)
+            except Exception as e:
+                print(e)
+
+    def get_insert_sql(self, tableName, datas, datasType, busiDateFlag):
+
+        floatFileds = []
+
+        strSqlList = []
+
+        for dt in datasType:
+            if dt["data_type"] == "float" or dt["data_type"] == "int":
+                floatFileds.append(dt["column_name"])
+
+        for rowItem in datas:
+            strSqlRowFeld = ""
+            strSqlRowValue = ""
+            for k, v in rowItem.items():
+                if strSqlRowFeld == "" and busiDateFlag == "Y":
+                    strSqlRowFeld = "`busi_date`, `{0}`".format(k)
+                elif strSqlRowFeld == "" and busiDateFlag == "N":
+                    strSqlRowFeld = "`{0}`".format(k)
+                else:
+                    strSqlRowFeld = "{0}, `{1}`".format(strSqlRowFeld, k)
+
+                # if str(type(v)) == float and v >= 0:
+                #     v = v
+                # elif str(v) == "nan":
+                #     v = 0
+                if k in floatFileds and v is None:
+                    v = 0
+                elif v is None:
+                    v = ""
+
+                if strSqlRowValue == "" and busiDateFlag == "Y":
+                    strSqlRowValue = "'{0}','{1}'".format(self.busiDate, v)
+                elif strSqlRowValue == "" and busiDateFlag == "N":
+                    strSqlRowValue = "'{0}'".format(v)
+                else:
+                    ''' 特殊字符处理 转换类型 '''
+                    if "'" in str(v):
+                        v = v.replace("'", "''")
+                    if "%" in str(v):
+                        v = v.replace("%", "%%")
+                    strSqlRowValue = "{0}, '{1}'".format(strSqlRowValue, v)
+
+            strSql = "INSERT INTO {0} ({1}) VALUES ({2})".format(tableName, strSqlRowFeld, strSqlRowValue)
+
+            strSqlList.append(strSql)
+
+        return strSqlList
+            # try:
+            #     self.mysqlExe.execute(strSql)
+            # except Exception as e:
+            #     print(e)
+
+    def get_datas_for_db_trade_cal(self, begDate, endDate):
+        try:
+            strSql = "select cal_date from trade_cal a where 0=0 and a.exchange in ('SSE','SZSE') and is_open=1 and cal_date between {0} and {1} order by cal_date".format(begDate, endDate)
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_db_concept(self):
+        try:
+            strSql = "select code from concept a where 0=0 order by code;"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_db_sys_dict(self, dictId, dictItem='*'):
+        try:
+            if dictItem == "*":
+                strSql = "select dict_item from sys_dict a where 0=0 and dict_id = '{0}' order by dict_item;".format(dictId)
+            else:
+                strSql = "select dict_item from sys_dict a where 0=0 and dict_id = '{0}' and dict_item = '{1}' order by dict_item;".format(dictId, dictItem)
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_db_stock_basic(self):
+        try:
+            strSql = "select ts_code from stock_basic order by ts_code"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_ts_income(self, tsCode):
+
+        # 定时器
+        timerCount = 60
+        callCnt = 80
+        interval = callCnt / timerCount
+
+        try:
+            tableName = "income"
+            df = self.pro.income(ts_code='{0}'.format(tsCode), start_date='', end_date='')
+            datas = df.to_dict("records")
+            return datas
+        except:
+            return False
+
+    def get_datas_for_ts_daily(self, trdDate):
+        '''
+        日线行情
+        接口：daily
+        更新时间：交易日每天15点～16点之间
+        描述：获取股票行情数据，或通过通用行情接口获取数据，包含了前后复权数据．
+        '''
+        try:
+            tableName = "daily"
+            # strSql = "delete from %s where trade_date = %s;" % (tableName, trdDate)
+            # self.mysqlExe.execute(strSql)
+            df = self.pro.daily(trade_date=trdDate)
+            datas = df.to_dict("records")
+            return datas
+        except:
+            return False
+
+    def get_datas_for_db_index_basic(self):
+        try:
+            strSql = "select ts_code from index_basic order by ts_code"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    #################################################################
+
+    def get_insertsql_stock_basic(self, argsDict):
+        '''
+        股票列表
+        接口：stock_basic
+        描述：获取基础信息数据，包括股票代码、名称、上市日期、退市日期等
+        '''
+        # print(tp.get_table_field_list("stock_basic"))
+        tableName = "stock_basic"
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is True:
+
+            df = self.pro.stock_basic(exchange='', list_status='', fields='ts_code,symbol,name,area,industry,fullname,enname,market,exchange,curr_type,list_status,list_date,delist_date,is_hs')
+            df = df.fillna(value=0)
+            datas = df.to_dict("records")
+            dataType = []
+            try:
+                self.truncate_table(tableName)
+                strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+                self.insert_collect_flag(tableName, codeType, inputCode)
+            except Exception as e:
+                print(e)
+
+            return strSqlList
+
+        else:
+            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+
+
+    def get_tpdatas_trade_cal(self,):
+        '''
+        股票列表
+        接口：trade_cal
+        描述：获取各大交易所交易日历数据,默认提取的是上交所
+        '''
+        tableName = "trade_cal"
+
+        # 判断当前日期是否大于YYYY1220日 如果大于，则开始获取下一年度交易日历
+        yyyy = time.strftime("%Y")
+        mmdd = time.strftime('%m%d')
+
+        yyyyNext = int(yyyy) + 1
+
+        if int(mmdd) > 1220:
+            startDate = "%s1201" % yyyy # 为防止当年最后几天被调整为节假日 需要多取一个月的日期
+            endDate = "%s1231" % yyyyNext
+        else:
+            print("接口名称：{0} ，不在指定采集时间范围内(>{1}1220)，无需再次采集！".format(tableName, yyyy))
+            return ""
+
+        df = self.pro.trade_cal(exchange='', start_date=startDate, end_date=endDate)
+        # df = self.pro.trade_cal(exchange='', start_date="20180101", end_date="20191231")
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+        dataType = []
+        try:
+            strSql = "delete from trade_cal where cal_date between {0} and {1}".format(startDate, endDate)
+            # strSql = "delete from trade_cal where cal_date between {0} and {1}".format("20180101", "20191231")
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+
+        except Exception as e:
+            print(e)
+
+
 class Tushare_Proc(object):
 
     def __init__(self, pro, mysqlExe, busiDate=None):
@@ -1660,36 +2010,37 @@ class Tushare_Proc(object):
         # print(argsDict)
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
-        startDate = argsDict["startDate"]
-        endDate = argsDict["endDate"]
+        # startDate = argsDict["startDate"]
+        # endDate = argsDict["endDate"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
 
         rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
 
-        if rtnMsg is True:
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return
 
-            if codeType == "ts_code":
-                df = self.pro.index_daily(ts_code='{0}'.format(inputCode), start_date='{0}'.format(startDate), end_date='{0}'.format(endDate))
-            elif codeType == "trade_date":
-                df = self.pro.index_daily(trade_date='{0}'.format(inputCode))
-            else:
-                return False
-            time.sleep(2.5)
+        if codeType == "ts_code":
+            df = self.pro.index_daily(ts_code='{0}'.format(inputCode), start_date='', end_date='')
+        elif codeType == "trade_date":
+            df = self.pro.index_daily(ts_code='', trade_date='{0}'.format(inputCode))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
 
-            df = df.fillna(value=0)
-            datas = df.to_dict("records")
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return
 
-            if len(datas) != 0:
-
-                dataType = self.get_table_column_data_type(tableName)
-                try:
-                    strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
-                    self.mysqlExe.execute(strSql)
-                    self.insert_new_datas_2_db(tableName, datas, dataType, "N")
-                    self.insert_collect_flag(tableName, codeType, inputCode)
-                except Exception as e:
-                    print(e)
-        else:
-            print("接口名称：{0} {1}，无任何返回记录，或已在今天采集，无需再次采集！".format(tableName, inputCode))
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSql = "delete from {0} where {1} = '{2}';".format(tableName, codeType, inputCode)
+            self.mysqlExe.execute(strSql)
+            self.insert_new_datas_2_db(tableName, datas, dataType, "N")
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
 
     def proc_main_index_weight_datas(self, argsDict):
         '''

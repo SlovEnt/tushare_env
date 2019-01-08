@@ -11,6 +11,8 @@ import os
 import re
 import time
 from multiprocessing import Pool
+from queue import Queue
+import threading
 from  exec_class import Tushare_Proc
 import traceback
 
@@ -30,13 +32,14 @@ mysqlExe = torndb.Connection(
 )
 
 pro = ts.pro_api(PARAINFO["TUSHARE_TOKEN"])
-tp = Tushare_Proc(pro, mysqlExe)
+# tp = Tushare_Proc(pro, mysqlExe)
+tp = Tushare_Proc(pro, mysqlExe, busiDate="20190106")
 
 def proc_main_stock_basic_datas():
     argsDict = {}
+    argsDict["recollect"] = "0"
     argsDict["inputCode"] = ""
     argsDict["codeType"] = ""
-    argsDict["recollect"] = "0"
     tp.proc_main_stock_basic_datas(argsDict)
 
 def proc_main_trade_cal_datas():
@@ -84,6 +87,14 @@ def proc_main_concept_datas():
     argsDict["codeType"] = "src"
     argsDict["inputCode"] = "ts"
     tp.proc_main_concept_datas(argsDict)
+    tsList = tp.get_datas_for_db_concept()
+    for tsCode in tsList:
+        argsDict = {}
+        argsDict["recollect"] = "0"
+        argsDict["codeType"] = "id"
+        argsDict["inputCode"] = tsCode["code"]
+        tp.proc_main_concept_detail_datas(argsDict)
+
 
 def proc_main_index_basic_datas():
     sysDicts = tp.get_datas_for_db_sys_dict("market")
@@ -93,6 +104,14 @@ def proc_main_index_basic_datas():
         argsDict["codeType"] = "market"
         argsDict["inputCode"] = sysDict["dict_item"]
         tp.proc_main_index_basic_datas(argsDict)
+    time.sleep(2)
+    marketTsCodeList = tp.get_datas_for_db_index_basic()
+    for marketTsCode in marketTsCodeList:
+        argsDict = {}
+        argsDict["recollect"] = "1"
+        argsDict["codeType"] = "ts_code"
+        argsDict["inputCode"] = marketTsCode["ts_code"]
+        tp.proc_main_index_daily_datas(argsDict)
 
 def proc_main_fund_basic_datas():
 
@@ -129,16 +148,16 @@ def run_main():
 
     p = Pool(5)
 
-    # p.apply_async(proc_main_stock_basic_datas,)
-    # p.apply_async(proc_main_trade_cal_datas,)
-    # p.apply_async(proc_main_stock_company_datas,)
-    # p.apply_async(proc_main_namechange_datas,)
-    # p.apply_async(proc_main_hs_const_datas,)
-    # p.apply_async(proc_main_new_share_datas,)
-    # p.apply_async(proc_main_concept_datas,)
-    # p.apply_async(proc_main_index_basic_datas,)
-    # p.apply_async(proc_main_fund_basic_datas,)
-    # p.apply_async(proc_main_fund_company_datas,)
+    p.apply_async(proc_main_stock_basic_datas,)
+    p.apply_async(proc_main_trade_cal_datas,)
+    p.apply_async(proc_main_stock_company_datas,)
+    p.apply_async(proc_main_namechange_datas,)
+    p.apply_async(proc_main_hs_const_datas,)
+    p.apply_async(proc_main_new_share_datas,)
+    p.apply_async(proc_main_concept_datas,)
+    p.apply_async(proc_main_index_basic_datas,)
+    p.apply_async(proc_main_fund_basic_datas,)
+    p.apply_async(proc_main_fund_company_datas,)
     p.apply_async(proc_main_opt_basic_datas,)
 
     p.close()
