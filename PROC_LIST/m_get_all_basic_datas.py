@@ -158,6 +158,18 @@ def get_tpdatas_fut_basic(cFlag, q, inputCode):
         for strSql in strSqlList:
             q.put(strSql)
 
+def get_tpdatas_opt_basic(cFlag, q, inputCode):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "exchange"
+    argsDict["inputCode"] = inputCode
+
+    strSqlList = tp2.get_tpdatas_opt_basic(argsDict)
+
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
 def get_tpdatas_fund_company(cFlag, q):
     argsDict = {}
     argsDict["recollect"] = cFlag
@@ -195,7 +207,7 @@ def run_m_get_all_basic_datas():
     # p.apply_async(func=get_tpdatas_stock_company, args=("0",q,))
     # p.apply_async(func=get_tpdatas_namechange, args=("0",q,))
     # p.apply_async(func=get_tpdatas_hs_const, args=("0",q,))
-    # p.apply_async(func=get_tpdatas_new_share, args=("0",q,))
+    # # p.apply_async(func=get_tpdatas_new_share, args=("0",q,))
     # p.apply_async(func=get_tpdatas_concept, args=("0",q,))
     #
     # sysDicts = tp2.get_datas_for_db_sys_dict("market")
@@ -210,7 +222,12 @@ def run_m_get_all_basic_datas():
     # 期货合约信息表
     exchangeCodeList = ["CFFEX","DCE","CZCE","SHFE","INE"]
     for exchangeCode in exchangeCodeList:
-        p.apply_async(func=get_tpdatas_fut_basic, args=("1", q, exchangeCode))
+        p.apply_async(func=get_tpdatas_fut_basic, args=("0", q, exchangeCode))
+
+    # 期权合约
+    exchangeCodeList = ["SSE"]
+    for exchangeCode in exchangeCodeList:
+        p.apply_async(func=get_tpdatas_opt_basic, args=("1", q, exchangeCode))
 
 
 
@@ -222,11 +239,8 @@ def run_m_get_all_basic_datas():
 if __name__ == '__main__':
 
     # 获取各交易所的交易日历，每年年底再打开获取打开获取
-    exchangeCodeList = tp2.get_datas_for_db_sys_dict("exchange")
-    for exchangeCode in exchangeCodeList:
-        tp2.get_tpdatas_trade_cal_2_db(exchangeCode["dict_item"],"19000101","20191231")
-    # tp2.get_tpdatas_trade_cal_2_db("CFFEX","19000101","20191231")
-    # tp2.get_tpdatas_trade_cal_2_db("CZCE","19000101","20191231")
-    # tp2.get_tpdatas_trade_cal_2_db("INE","19000101","20191231")
+    # exchangeCodeList = tp2.get_datas_for_db_sys_dict("exchange")
+    # for exchangeCode in exchangeCodeList:
+    #     tp2.get_tpdatas_trade_cal_2_db(exchangeCode["dict_item"],"20170101","20191231")
 
-    # run_m_get_all_basic_datas()
+    run_m_get_all_basic_datas()

@@ -194,7 +194,8 @@ class Tushare_Proc_v2(object):
 
     def get_datas_for_db_trade_cal(self, exchangeCode, begDate, endDate):
         try:
-            strSql = "select distinct cal_date from trade_cal a where 0=0 and a.exchange = '{3}' and is_open=1 and cal_date between {0} and {1} order by cal_date".format(begDate, endDate, exchangeCode)
+            strSql = "select distinct cal_date from trade_cal a where 0=0 and a.exchange = '{2}' and is_open=1 and cal_date between {0} and {1} order by cal_date".format(begDate, endDate,
+                                                                                                                                                                          exchangeCode)
             rtnDatas = self.mysqlExe.query(strSql)
             if len(rtnDatas) == 0:
                 return False
@@ -296,6 +297,17 @@ class Tushare_Proc_v2(object):
     def get_datas_for_db_fut_basic(self):
         try:
             strSql = "select ts_code from fut_basic group by ts_code order by ts_code"
+            rtnDatas = self.mysqlExe.query(strSql)
+            if len(rtnDatas) == 0:
+                return False
+            else:
+                return rtnDatas
+        except:
+            return False
+
+    def get_datas_for_db_opt_basic(self):
+        try:
+            strSql = "select ts_code from opt_basic group by ts_code order by ts_code"
             rtnDatas = self.mysqlExe.query(strSql)
             if len(rtnDatas) == 0:
                 return False
@@ -528,56 +540,56 @@ class Tushare_Proc_v2(object):
 
         return strSqlList
 
-    def get_tpdatas_new_share(self, argsDict):
-        '''
-        接口：new_share
-        描述：获取新股上市列表数据
-        限量：单次最大2000条，总量不限制
-        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
-        '''
-
-        tableName = "new_share"
-        strSqlList = []
-
-        codeType = argsDict["codeType"]
-        inputCode = argsDict["inputCode"]
-
-        if argsDict["recollect"] == "1":
-            self.delete_collect_flag(tableName, codeType, inputCode)
-
-        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
-
-        if rtnMsg is False:
-            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
-            return strSqlList
-
-        if inputCode != "":
-            df = self.pro.new_share(start_date="{0}".format(inputCode))
-        else:
-            df = self.pro.new_share()
-
-        df = df.fillna(value=0)
-        datas = df.to_dict("records")
-
-        if len(datas) == 0:
-            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
-            return strSqlList
-
-        dataType = []
-
-        try:
-            # self.truncate_table(tableName)
-
-            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
-            if inputCode != "":
-                self.delete_table_datas(tableName, codeType, inputCode)
-            else:
-                self.truncate_table(tableName)
-            self.insert_collect_flag(tableName, codeType, inputCode)
-        except Exception as e:
-            print(e)
-
-        return strSqlList
+    # def get_tpdatas_new_share(self, argsDict):
+    #     '''
+    #     接口：new_share
+    #     描述：获取新股上市列表数据
+    #     限量：单次最大2000条，总量不限制
+    #     积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+    #     '''
+    #
+    #     tableName = "new_share"
+    #     strSqlList = []
+    #
+    #     codeType = argsDict["codeType"]
+    #     inputCode = argsDict["inputCode"]
+    #
+    #     if argsDict["recollect"] == "1":
+    #         self.delete_collect_flag(tableName, codeType, inputCode)
+    #
+    #     rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+    #
+    #     if rtnMsg is False:
+    #         print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+    #         return strSqlList
+    #
+    #     if inputCode != "":
+    #         df = self.pro.new_share(start_date="{0}".format(inputCode))
+    #     else:
+    #         df = self.pro.new_share()
+    #
+    #     df = df.fillna(value=0)
+    #     datas = df.to_dict("records")
+    #
+    #     if len(datas) == 0:
+    #         print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+    #         return strSqlList
+    #
+    #     dataType = []
+    #
+    #     try:
+    #         # self.truncate_table(tableName)
+    #
+    #         strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+    #         if inputCode != "":
+    #             self.delete_table_datas(tableName, codeType, inputCode)
+    #         else:
+    #             self.truncate_table(tableName)
+    #         self.insert_collect_flag(tableName, codeType, inputCode)
+    #     except Exception as e:
+    #         print(e)
+    #
+    #     return strSqlList
 
     def get_tpdatas_concept(self, argsDict):
         '''
@@ -1383,6 +1395,93 @@ class Tushare_Proc_v2(object):
 
         return strSqlList
 
+    def get_tpdatas_top_list(self, argsDict):
+        '''
+        接口：top_list
+        描述：龙虎榜每日交易明细
+        数据历史： 2005年至今
+        限量：单次最大10000
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "top_list"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.top_list(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.top_list(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_top_inst(self, argsDict):
+        '''
+        接口：top_inst
+        描述：龙虎榜机构成交明细
+        限量：单次最大10000
+        积分：用户需要至少300积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "top_inst"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.top_inst(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.top_inst(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
     def get_tpdatas_pledge_stat(self, argsDict):
         '''
         接口：pledge_stat
@@ -1452,6 +1551,48 @@ class Tushare_Proc_v2(object):
             df = self.pro.pledge_detail(ts_code=inputCode)
         elif codeType == "ts_code":
             df = self.pro.pledge_detail(ts_code=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_repurchase(self, argsDict):
+        '''
+        接口：repurchase
+        描述：获取上市公司回购股票数据
+        积分：用户需要至少600积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "repurchase"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ann_date":
+            df = self.pro.repurchase(ann_date=inputCode)
+        elif codeType == "ann_date":
+            df = self.pro.repurchase(ann_date=inputCode)
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1765,6 +1906,298 @@ class Tushare_Proc_v2(object):
 
         return strSqlList
 
+    def get_tpdatas_index_dailybasic(self, argsDict):
+        '''
+        接口：index_dailybasic
+        描述：目前只提供上证综指，深证成指，上证50，中证500，中小板指，创业板指的每日指标数据
+        数据来源：Tushare社区统计计算
+        数据历史：从2004年1月开始提供
+        数据权限：用户需要至少400积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "index_dailybasic"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.index_dailybasic(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.index_dailybasic(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_margin(self, argsDict):
+        '''
+        接口：margin
+        描述：获取融资融券每日交易汇总数据
+        '''
+        tableName = "margin"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "exchange_id":
+            df = self.pro.margin(exchange_id=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.margin(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_margin_detail(self, argsDict):
+        '''
+        接口：margin_detail
+        描述：获取沪深两市每日融资融券明细
+        '''
+        tableName = "margin_detail"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.margin_detail(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.margin_detail(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_hsgt_top10(self, argsDict):
+        '''
+        接口：hsgt_top10
+        描述：获取沪股通、深股通每日前十大成交详细数据
+        '''
+        tableName = "hsgt_top10"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.hsgt_top10(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.hsgt_top10(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_ggt_top10(self, argsDict):
+        '''
+        接口：ggt_top10
+        描述：获取港股通每日成交数据，其中包括沪市、深市详细数据
+        '''
+        tableName = "ggt_top10"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.ggt_top10(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.ggt_top10(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_moneyflow_hsgt(self, argsDict):
+        '''
+        接口：moneyflow_hsgt
+        描述：获取沪股通、深股通、港股通每日资金流向数据
+        '''
+        tableName = "moneyflow_hsgt"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "trade_date":
+            df = self.pro.moneyflow_hsgt(trade_date=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.moneyflow_hsgt(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_new_share(self, argsDict):
+        '''
+        接口：new_share
+        描述：获取新股上市列表数据
+        限量：单次最大2000条，总量不限制
+        积分：用户需要至少120积分才可以调取，具体请参阅积分获取办法
+
+        特别处理  start_date end_date
+        '''
+        tableName = "new_share"
+        strSqlList = []
+
+        start_date = argsDict["start_date"]
+        end_date = argsDict["end_date"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, "date", start_date)
+
+        rtnMsg = self.select_collect_flag(tableName, "date", start_date)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, start_date))
+            return strSqlList
+
+        df = self.pro.new_share(start_date='{0}'.format(start_date), end_date='{0}'.format(end_date))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, start_date))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            strSql = "delete from new_share where ipo_date between {0} and {1}".format(start_date, end_date)
+            self.mysqlExe.execute(strSql)
+            self.insert_collect_flag(tableName, "date", start_date)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
     def get_tpdatas_fund_nav(self, argsDict):
         '''
         接口：fund_nav
@@ -1938,6 +2371,48 @@ class Tushare_Proc_v2(object):
 
         return strSqlList
 
+    def get_tpdatas_opt_basic(self, argsDict):
+        '''
+        接口：opt_basic
+        描述：获取期权合约信息
+        积分：用户需要至少200积分才可以调取，但有流量控制，请自行提高积分，积分越多权限越大，具体请参阅积分获取办法
+        '''
+        tableName = "opt_basic"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "exchange":
+            df = self.pro.opt_basic(exchange=inputCode)
+        elif codeType == "call_put":
+            df = self.pro.opt_basic(call_put=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
     def get_tpdatas_fund_daily(self, argsDict):
         '''
         接口：fund_daily
@@ -2020,6 +2495,490 @@ class Tushare_Proc_v2(object):
             strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
             self.delete_table_datas(tableName, codeType, inputCode)
             self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_opt_daily(self, argsDict):
+        '''
+        接口：opt_daily
+        描述：获取期权日线行情
+        限量：单次最大1000，总量不限制
+        积分：用户需要至少200积分才可以调取，但有流量控制，请自行提高积分，积分越多权限越大，具体请参阅积分获取办法
+        '''
+        tableName = "opt_daily"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ts_code":
+            df = self.pro.opt_daily(ts_code=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.opt_daily(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_fut_holding(self, argsDict):
+        '''
+        接口：fut_holding
+        描述：获取每日成交持仓排名数据
+        限量：单次最大2000，总量不限制
+        积分：用户需要至少600积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fut_holding"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "trade_date":
+            df = self.pro.fut_holding(trade_date=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.fut_holding(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_fut_wsr(self, argsDict):
+        '''
+        接口：fut_wsr
+        描述：获取仓单日报数据，了解各仓库/厂库的仓单变化
+        限量：单次最大1000，总量不限制
+        积分：用户需要至少600积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fut_wsr"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "trade_date":
+            df = self.pro.fut_wsr(trade_date=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.fut_wsr(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_fut_settle(self, argsDict):
+        '''
+        接口：fut_settle
+        描述：获取每日结算参数数据，包括交易和交割费率等
+        限量：单次最大1000，总量不限制
+        积分：用户需要至少600积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "fut_settle"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "trade_date":
+            df = self.pro.fut_settle(trade_date=inputCode)
+        elif codeType == "trade_date":
+            df = self.pro.fut_settle(trade_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_shibor(self, argsDict):
+        '''
+        接口：shibor
+        描述：shibor利率
+        限量：单次最大2000，总量不限制，可通过设置开始和结束日期分段获取
+        积分：用户积累120积分可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "shibor"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.shibor(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.shibor(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_shibor_quote(self, argsDict):
+        '''
+        接口：shibor_quote
+        描述：Shibor报价数据
+        限量：单次最大4000行数据，总量不限制，可通过设置开始和结束日期分段获取
+        积分：用户积累120积分可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "shibor_quote"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.shibor_quote(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.shibor_quote(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_shibor_lpr(self, argsDict):
+        '''
+        接口：shibor_lpr
+        描述：LPR贷款基础利率
+        限量：单次最大4000(相当于单次可提取18年历史)，总量不限制，可通过设置开始和结束日期分段获取
+        积分：用户积累120积分可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "shibor_lpr"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.shibor_lpr(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.shibor_lpr(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_libor(self, argsDict):
+        '''
+        接口：libor
+        描述：Libor拆借利率
+        限量：单次最大4000行数据，总量不限制，可通过设置开始和结束日期分段获取
+        积分：用户积累120积分可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "libor"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.libor(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.libor(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_hibor(self, argsDict):
+        '''
+        接口：hibor
+        描述：Hibor利率
+        限量：单次最大4000行数据，总量不限制，可通过设置开始和结束日期分段获取
+        积分：用户积累120积分可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "hibor"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.hibor(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.hibor(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_tmt_twincomedetail(self, argsDict):
+        '''
+        接口：tmt_twincomedetail
+        描述：获取台湾TMT行业上市公司各类产品月度营收情况。
+        '''
+        tableName = "tmt_twincomedetail"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+        item = argsDict["item"]
+        date = argsDict["date"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, item, date)
+
+        rtnMsg = self.select_collect_flag(tableName, item, date)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1} {2}，已在今天采集，无需再次采集！".format(tableName, item, date))
+            return strSqlList
+
+        if codeType == "":
+            df = self.pro.tmt_twincomedetail(item=item)
+        elif codeType == "date":
+            df = self.pro.tmt_twincomedetail(item=item, date=date)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1} {2}，无任何返回记录！".format(tableName, item, date))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            if codeType == "":
+                strSql = "delete from {0} where item = {1}".format(tableName, item)
+            elif codeType == "date":
+                strSql = "delete from {0} where item = {1} and date = {2}".format(tableName, item, date)
+            self.mysqlExe.execute(strSql)
+            self.insert_collect_flag(tableName, item, date)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+
+    def get_tpdatas_tmt_twincome(self, argsDict):
+        '''
+        接口：tmt_twincome
+        描述：获取台湾TMT电子产业领域各类产品月度营收数据。
+
+        特别处理
+        '''
+        tableName = "tmt_twincome"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+        item = argsDict["item"]
+        date = argsDict["date"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, item, date)
+
+        rtnMsg = self.select_collect_flag(tableName, item, date)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1} {2}，已在今天采集，无需再次采集！".format(tableName, item, date))
+            return strSqlList
+
+        if codeType == "":
+            df = self.pro.tmt_twincome(item=item)
+        elif codeType == "date":
+            df = self.pro.tmt_twincome(item=item, date=date)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1} {2}，无任何返回记录！".format(tableName, item, date))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            if codeType == "":
+                strSql = "delete from {0} where item = {1}".format(tableName, item)
+            elif codeType == "date":
+                strSql = "delete from {0} where item = {1} and date = {2}".format(tableName, item, date)
+            self.mysqlExe.execute(strSql)
+            self.insert_collect_flag(tableName, item, date)
         except Exception as e:
             print(e)
 

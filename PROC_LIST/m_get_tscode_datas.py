@@ -319,6 +319,28 @@ def get_tpdatas_fut_daily(cFlag, q, tsCode):
         for strSql in strSqlList:
             q.put(strSql)
 
+def get_tpdatas_opt_daily(cFlag, q, tsCode):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+
+    strSqlList = tp2.get_tpdatas_opt_daily(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
+def get_tpdatas_index_dailybasic(cFlag, q, tsCode):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+
+    strSqlList = tp2.get_tpdatas_index_dailybasic(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
 def get_tpdatas_concept_detail(cFlag, q):
     argsDict = {}
     argsDict["recollect"] = cFlag
@@ -378,13 +400,14 @@ def run_m_get_tscode_datas():
 
     # p.apply_async(func=get_tpdatas_concept_detail, args=("0",q,))
 
-    # 指数日线行情
+    # --- 指数日线行情
     # marketTsCodeList = tp2.get_datas_for_db_index_basic()
     # for marketTsCode in marketTsCodeList:
-    #     p.apply_async(func=get_tpdatas_index_daily, args=("0", q, marketTsCode["ts_code"]))
-    #     p.apply_async(func=get_tpdatas_index_weight, args=("0", q, marketTsCode["ts_code"]))
+    #     # p.apply_async(func=get_tpdatas_index_daily, args=("0", q, marketTsCode["ts_code"]))
+    #     # p.apply_async(func=get_tpdatas_index_weight, args=("0", q, marketTsCode["ts_code"]))
+    #     p.apply_async(func=get_tpdatas_index_dailybasic, args=("0", q, marketTsCode["ts_code"]))
 
-    # 指数日线行情
+    # 基金数据
     # fundTsCodeList = tp2.get_datas_for_db_fund_basic()
     # for fundTsCode in fundTsCodeList:
     #     p.apply_async(func=get_tpdatas_fund_nav, args=("0", q, fundTsCode["ts_code"]))
@@ -393,9 +416,14 @@ def run_m_get_tscode_datas():
     #     p.apply_async(func=get_tpdatas_fund_daily, args=("1", q, fundTsCode["ts_code"]))
 
     # 期货日线行情
-    futTsCodeList = tp2.get_datas_for_db_fut_basic()
-    for futTsCode in futTsCodeList:
-        p.apply_async(func=get_tpdatas_fut_daily, args=("0", q, futTsCode["ts_code"]))
+    # futTsCodeList = tp2.get_datas_for_db_fut_basic()
+    # for futTsCode in futTsCodeList:
+    #     p.apply_async(func=get_tpdatas_fut_daily, args=("0", q, futTsCode["ts_code"]))
+
+    # 期权日线行情
+    optTsCodeList = tp2.get_datas_for_db_opt_basic()
+    for optTsCode in optTsCodeList:
+        p.apply_async(func=get_tpdatas_opt_daily, args=("0", q, optTsCode["ts_code"]))
 
 
 
