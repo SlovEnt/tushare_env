@@ -261,6 +261,72 @@ def get_tpdatas_tmt_twincome(cFlag, q, item, date):
         for strSql in strSqlList:
             q.put(strSql)
 
+def get_tpdatas_bo_monthly(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_bo_monthly(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
+def get_tpdatas_bo_weekly(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_bo_weekly(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
+def get_tpdatas_bo_daily(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_bo_daily(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
+def get_tpdatas_bo_cinema(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_bo_cinema(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
+def get_tpdatas_cctv_news(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_cctv_news(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
+def get_tpdatas_film_record(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ann_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_film_record(argsDict)
+    if len(strSqlList) != 0:
+        for strSql in strSqlList:
+            q.put(strSql)
+
 
 def put_in_db(q, i):
     try:
@@ -305,12 +371,18 @@ def run_m_get_tscode_datas():
         # p.apply_async(func=get_tpdatas_shibor_lpr, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_libor, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_hibor, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_bo_monthly, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_bo_weekly, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_bo_daily, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_bo_cinema, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_film_record, args=("0", q, tradeCalData["cal_date"]))
 
-        sysDicts = tp2.get_datas_for_db_sys_dict("item")
-        for sysDict in sysDicts:
-            p.apply_async(func=get_tpdatas_tmt_twincome, args=("0", q, sysDict["dict_item"], tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_cctv_news, args=("0", q, tradeCalData["cal_date"]))
 
-            p.apply_async(func=get_tpdatas_tmt_twincomedetail, args=("0", q, sysDict["dict_item"], tradeCalData["cal_date"]))
+        # sysDicts = tp2.get_datas_for_db_sys_dict("item")
+        # for sysDict in sysDicts:
+        #     p.apply_async(func=get_tpdatas_tmt_twincome, args=("0", q, sysDict["dict_item"], tradeCalData["cal_date"]))
+        #     p.apply_async(func=get_tpdatas_tmt_twincomedetail, args=("0", q, sysDict["dict_item"], tradeCalData["cal_date"]))
 
     #     # p.apply_async(func=get_tpdatas_weekly, args=("1",q, tsCode["ts_code"]))
     #     # p.apply_async(func=get_tpdatas_monthly, args=("1",q, tsCode["ts_code"]))

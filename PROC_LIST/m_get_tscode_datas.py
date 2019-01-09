@@ -33,7 +33,7 @@ pro = ts.pro_api(PARAINFO["TUSHARE_TOKEN"])
 
 # tp = Tushare_Proc(pro, mysqlExe)
 # tp = Tushare_Proc(pro, mysqlExe, busiDate="20190106")
-tp2 = Tushare_Proc_v2(pro, mysqlExe, busiDate="20190106")
+tp2 = Tushare_Proc_v2(pro, mysqlExe, busiDate="20190109")
 
 
 def get_tpdatas_daily(cFlag, q, tsCode):
@@ -379,23 +379,30 @@ def run_m_get_tscode_datas():
     # 第一个入参明确是否强制重新采集 0 采集后不重采 1 强制重采
 
     for tsCode in tsCodes:
-        # p.apply_async(func=get_tpdatas_daily, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_weekly, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_monthly, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_adj_factor, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_daily_basic, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_suspend, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_income, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_balancesheet, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_cashflow, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_forecast, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_express, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_dividend, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_fina_indicator, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_fina_audit, args=("1",q, tsCode["ts_code"]))
-        # p.apply_async(func=get_tpdatas_fina_mainbz, args=("1",q, tsCode["ts_code"]))
+
+        # 行情数据
+        # p.apply_async(func=get_tpdatas_daily, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_weekly, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_monthly, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_adj_factor, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_daily_basic, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_suspend, args=("0",q, tsCode["ts_code"]))
+
+        # 财务数据
+        p.apply_async(func=get_tpdatas_income, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_balancesheet, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_cashflow, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_forecast, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_express, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_dividend, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_fina_indicator, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_fina_audit, args=("0",q, tsCode["ts_code"]))
+        p.apply_async(func=get_tpdatas_fina_mainbz, args=("0",q, tsCode["ts_code"]))
+
+        # 市场参考数据
         # p.apply_async(func=get_tpdatas_share_float, args=("0",q, tsCode["ts_code"]))
         # p.apply_async(func=get_tpdatas_block_trade, args=("0",q, tsCode["ts_code"]))
+
         pass
 
     # p.apply_async(func=get_tpdatas_concept_detail, args=("0",q,))
@@ -411,9 +418,9 @@ def run_m_get_tscode_datas():
     # fundTsCodeList = tp2.get_datas_for_db_fund_basic()
     # for fundTsCode in fundTsCodeList:
     #     p.apply_async(func=get_tpdatas_fund_nav, args=("0", q, fundTsCode["ts_code"]))
-    #     p.apply_async(func=get_tpdatas_fund_div, args=("1", q, fundTsCode["ts_code"]))
-    #     # p.apply_async(func=get_tpdatas_fund_portfolio, args=("1", q, fundTsCode["ts_code"])) # 1000积分才允许调用
-    #     p.apply_async(func=get_tpdatas_fund_daily, args=("1", q, fundTsCode["ts_code"]))
+    #     p.apply_async(func=get_tpdatas_fund_div, args=("0", q, fundTsCode["ts_code"]))
+    #     # p.apply_async(func=get_tpdatas_fund_portfolio, args=("0", q, fundTsCode["ts_code"])) # 1000积分才允许调用
+    #     p.apply_async(func=get_tpdatas_fund_daily, args=("0", q, fundTsCode["ts_code"]))
 
     # 期货日线行情
     # futTsCodeList = tp2.get_datas_for_db_fut_basic()

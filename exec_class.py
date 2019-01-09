@@ -798,6 +798,8 @@ class Tushare_Proc(object):
 
         codeType = argsDict["codeType"]
         inputCode = argsDict["inputCode"]
+        startDate = argsDict["start_date"]
+        endDate = argsDict["end_date"]
 
         if argsDict["recollect"] == "1":
             self.delete_collect_flag(tableName, codeType, inputCode)

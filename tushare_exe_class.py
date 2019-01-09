@@ -699,10 +699,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.daily(ts_code=inputCode)
-        elif codeType == "trade_date":
-            df = self.pro.daily(trade_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.daily(ts_code=inputCode)
+                elif codeType == "trade_date":
+                    df = self.pro.daily(trade_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -742,10 +751,17 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.weekly(ts_code=inputCode)
-        elif codeType == "trade_date":
-            df = self.pro.weekly(trade_date=inputCode)
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.weekly(ts_code=inputCode)
+                elif codeType == "trade_date":
+                    df = self.pro.weekly(trade_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -785,10 +801,17 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.monthly(ts_code=inputCode)
-        elif codeType == "trade_date":
-            df = self.pro.monthly(trade_date=inputCode)
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.monthly(ts_code=inputCode)
+                elif codeType == "trade_date":
+                    df = self.pro.monthly(trade_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -827,10 +850,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.adj_factor(ts_code=inputCode)
-        elif codeType == "trade_date":
-            df = self.pro.adj_factor(trade_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.adj_factor(ts_code=inputCode)
+                elif codeType == "trade_date":
+                    df = self.pro.adj_factor(trade_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -870,10 +902,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.daily_basic(ts_code=inputCode)
-        elif codeType == "trade_date":
-            df = self.pro.daily_basic(trade_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.daily_basic(ts_code=inputCode)
+                elif codeType == "trade_date":
+                    df = self.pro.daily_basic(trade_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -912,12 +953,21 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.suspend(ts_code=inputCode)
-        elif codeType == "suspend_date":
-            df = self.pro.suspend(suspend_date=inputCode)
-        elif codeType == "resume_date":
-            df = self.pro.suspend(resume_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.suspend(ts_code=inputCode)
+                elif codeType == "suspend_date":
+                    df = self.pro.suspend(suspend_date=inputCode)
+                elif codeType == "resume_date":
+                    df = self.pro.suspend(resume_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -956,10 +1006,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.income(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.income(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.income(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.income(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -998,10 +1057,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.balancesheet(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.balancesheet(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.balancesheet(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.balancesheet(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1040,10 +1108,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.cashflow(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.cashflow(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.cashflow(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.cashflow(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1082,10 +1159,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.forecast(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.forecast(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.forecast(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.forecast(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1124,10 +1210,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.express(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.express(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.express(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.express(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1166,10 +1261,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.dividend(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.dividend(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.dividend(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.dividend(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1208,10 +1312,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.fina_indicator(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.fina_indicator(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.fina_indicator(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.fina_indicator(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1250,10 +1363,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.fina_audit(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.fina_audit(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.fina_audit(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.fina_audit(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1292,10 +1414,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.fina_mainbz(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.fina_mainbz(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.fina_mainbz(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.fina_mainbz(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1589,10 +1720,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ann_date":
-            df = self.pro.repurchase(ann_date=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.repurchase(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ann_date":
+                    df = self.pro.repurchase(ann_date=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.repurchase(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1632,10 +1772,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.share_float(ts_code=inputCode)
-        elif codeType == "ann_date":
-            df = self.pro.share_float(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.share_float(ts_code=inputCode)
+                elif codeType == "ann_date":
+                    df = self.pro.share_float(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1675,10 +1824,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "ts_code":
-            df = self.pro.block_trade(ts_code=inputCode)
-        elif codeType == "trade_date":
-            df = self.pro.block_trade(ann_date=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "ts_code":
+                    df = self.pro.block_trade(ts_code=inputCode)
+                elif codeType == "trade_date":
+                    df = self.pro.block_trade(ann_date=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1716,10 +1874,19 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "market":
-            df = self.pro.index_basic(market=inputCode)
-        elif codeType == "market":
-            df = self.pro.index_basic(market=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "market":
+                    df = self.pro.index_basic(market=inputCode)
+                elif codeType == "market":
+                    df = self.pro.index_basic(market=inputCode)
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -1758,10 +1925,20 @@ class Tushare_Proc_v2(object):
             print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
             return strSqlList
 
-        if codeType == "market":
-            df = self.pro.fund_basic(market=inputCode)
-        elif codeType == "market":
-            df = self.pro.fund_basic(market=inputCode)
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                if codeType == "market":
+                    df = self.pro.fund_basic(market=inputCode)
+                elif codeType == "market":
+                    df = self.pro.fund_basic(market=inputCode)
+
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
@@ -2170,21 +2347,32 @@ class Tushare_Proc_v2(object):
         start_date = argsDict["start_date"]
         end_date = argsDict["end_date"]
 
-        if argsDict["recollect"] == "1":
-            self.delete_collect_flag(tableName, "date", start_date)
+        strFlag = "{0}-{1}".format(start_date, end_date)
 
-        rtnMsg = self.select_collect_flag(tableName, "date", start_date)
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, "date", strFlag)
+
+        rtnMsg = self.select_collect_flag(tableName, "date", strFlag)
 
         if rtnMsg is False:
-            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, start_date))
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, strFlag))
             return strSqlList
 
-        df = self.pro.new_share(start_date='{0}'.format(start_date), end_date='{0}'.format(end_date))
+        accessRight = False
+
+        while accessRight is False:
+            try:
+                df = self.pro.new_share(start_date='{0}'.format(start_date), end_date='{0}'.format(end_date))
+                accessRight = True
+            except Exception as e:
+                time.sleep(60)
+                print("有错误返回，请等待60秒。", e)
+
         df = df.fillna(value=0)
         datas = df.to_dict("records")
 
         if len(datas) == 0:
-            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, start_date))
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, strFlag))
             return strSqlList
 
         dataType = self.get_table_column_data_type(tableName)
@@ -2192,7 +2380,7 @@ class Tushare_Proc_v2(object):
             strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
             strSql = "delete from new_share where ipo_date between {0} and {1}".format(start_date, end_date)
             self.mysqlExe.execute(strSql)
-            self.insert_collect_flag(tableName, "date", start_date)
+            self.insert_collect_flag(tableName, "date", strFlag)
         except Exception as e:
             print(e)
 
@@ -2887,6 +3075,267 @@ class Tushare_Proc_v2(object):
 
         return strSqlList
 
+    def get_tpdatas_bo_monthly(self, argsDict):
+        '''
+        接口：bo_monthly
+        描述：获取电影月度票房数据
+        数据更新：本月更新上一月数据
+        数据历史： 数据从2008年1月1日开始，超过10年历史数据。
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_monthly"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.bo_monthly(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.bo_monthly(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_bo_weekly(self, argsDict):
+        '''
+        接口：bo_weekly
+        描述：获取周度票房数据
+        数据更新：本周更新上一周数据
+        数据历史： 数据从2008年第一周开始，超过10年历史数据。
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_weekly"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.bo_weekly(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.bo_weekly(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_bo_daily(self, argsDict):
+        '''
+        接口：bo_daily
+        描述：获取电影日度票房
+        数据更新：当日更新上一日数据
+        数据历史： 数据从2018年9月开始，更多历史数据正在补充
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_daily"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.bo_daily(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.bo_daily(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_bo_cinema(self, argsDict):
+        '''
+        接口：bo_cinema
+        描述：获取每日各影院的票房数据
+        数据历史： 数据从2018年9月开始，更多历史数据正在补充
+        数据权限：用户需要至少500积分才可以调取，具体请参阅积分获取办法
+        '''
+        tableName = "bo_cinema"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.bo_cinema(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.bo_cinema(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_film_record(self, argsDict):
+        '''
+        接口：film_record
+        描述：获取全国电影剧本备案的公示数据
+        限量：单次最大500，总量不限制
+        数据权限：用户需要至少120积分才可以调取，积分越多调取频次越高，具体请参阅积分获取办法
+        '''
+        tableName = "film_record"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "ann_date":
+            df = self.pro.film_record(ann_date=inputCode)
+        elif codeType == "ann_date":
+            df = self.pro.film_record(ann_date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_cctv_news(self, argsDict):
+        '''
+        接口：cctv_news
+        描述：获取新闻联播文字稿数据，数据开始于2009年6月
+        限量：总量不限制
+        积分：用户积累120积分可以调取，但会做流控限制，超过5000无限制，具体请参阅积分获取办法
+        '''
+        tableName = "cctv_news"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, codeType, inputCode)
+
+        rtnMsg = self.select_collect_flag(tableName, codeType, inputCode)
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1}，已在今天采集，无需再次采集！".format(tableName, inputCode))
+            return strSqlList
+
+        if codeType == "date":
+            df = self.pro.cctv_news(date=inputCode)
+        elif codeType == "date":
+            df = self.pro.cctv_news(date=inputCode)
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1}，无任何返回记录！".format(tableName, inputCode))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            self.delete_table_datas(tableName, codeType, inputCode)
+            self.insert_collect_flag(tableName, codeType, inputCode)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
     def get_tpdatas_tmt_twincomedetail(self, argsDict):
         '''
         接口：tmt_twincomedetail
@@ -2934,7 +3383,6 @@ class Tushare_Proc_v2(object):
 
         return strSqlList
 
-
     def get_tpdatas_tmt_twincome(self, argsDict):
         '''
         接口：tmt_twincome
@@ -2979,6 +3427,54 @@ class Tushare_Proc_v2(object):
                 strSql = "delete from {0} where item = {1} and date = {2}".format(tableName, item, date)
             self.mysqlExe.execute(strSql)
             self.insert_collect_flag(tableName, item, date)
+        except Exception as e:
+            print(e)
+
+        return strSqlList
+
+    def get_tpdatas_news(self, argsDict):
+        '''
+        接口：news
+        描述：获取主流新闻网站的快讯新闻数据
+        限量：单次最大1000条新闻
+        积分：用户积累1500积分可以调取，超过5000无限制，具体请参阅积分获取办法
+
+        特别处理
+        '''
+        tableName = "news"
+        strSqlList = []
+
+        codeType = argsDict["codeType"]
+        inputCode = argsDict["inputCode"]
+        startDay = argsDict["start_date"]
+        endDay = argsDict["end_date"]
+
+        startDateTime = "%s 00:00:00" % startDay
+        endDateTime = "%s 23:59:59" % endDay
+
+        if argsDict["recollect"] == "1":
+            self.delete_collect_flag(tableName, inputCode, "{0}-{1}".format(startDateTime, endDateTime))
+
+        rtnMsg = self.select_collect_flag(tableName, inputCode, "{0}-{1}".format(startDateTime, endDateTime))
+
+        if rtnMsg is False:
+            print("接口名称：{0} {1} {2}，已在今天采集，无需再次采集！".format(tableName, inputCode, "{0}-{1}".format(startDateTime, endDateTime)))
+            return strSqlList
+
+        df = self.pro.news(src='{0}'.format(inputCode), start_date='{0}'.format(startDateTime), end_date='{0}'.format(endDateTime))
+        df = df.fillna(value=0)
+        datas = df.to_dict("records")
+
+        if len(datas) == 0:
+            print("接口名称：{0} {1} {2}，无任何返回记录！".format(tableName, inputCode, "{0}-{1}".format(startDateTime, endDateTime)))
+            return strSqlList
+
+        dataType = self.get_table_column_data_type(tableName)
+        try:
+            strSqlList = self.get_insert_sql(tableName, datas, dataType, "N")
+            strSql = "delete from {0} where datetime between {1} and {2}".format(tableName, startDateTime, endDateTime)
+            self.mysqlExe.execute(strSql)
+            self.insert_collect_flag(tableName, inputCode, "{0}-{1}".format(startDateTime, endDateTime))
         except Exception as e:
             print(e)
 

@@ -118,9 +118,11 @@ def get_tpdatas_concept(cFlag, q):
 
     strSqlList = tp2.get_tpdatas_concept(argsDict)
 
-    if len(strSqlList) != 0:
-        for strSql in strSqlList:
-            q.put(strSql)
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
 
 def get_tpdatas_index_basic(cFlag, q, inputCode):
     argsDict = {}
@@ -203,20 +205,20 @@ def run_m_get_all_basic_datas():
         p.apply_async(func=put_in_db, args=(q,i,))
 
     # 第一个入参明确是否强制重新采集 0 采集后不重采 1 强制重采
-    # p.apply_async(func=get_tpdatas_stock_basic, args=("0",q,))
-    # p.apply_async(func=get_tpdatas_stock_company, args=("0",q,))
-    # p.apply_async(func=get_tpdatas_namechange, args=("0",q,))
-    # p.apply_async(func=get_tpdatas_hs_const, args=("0",q,))
-    # # p.apply_async(func=get_tpdatas_new_share, args=("0",q,))
-    # p.apply_async(func=get_tpdatas_concept, args=("0",q,))
-    #
-    # sysDicts = tp2.get_datas_for_db_sys_dict("market")
-    # for sysDict in sysDicts:
-    #     p.apply_async(func=get_tpdatas_index_basic, args=("1", q, sysDict["dict_item"]))
+    p.apply_async(func=get_tpdatas_stock_basic, args=("0",q,))
+    p.apply_async(func=get_tpdatas_stock_company, args=("0",q,))
+    p.apply_async(func=get_tpdatas_namechange, args=("0",q,))
+    p.apply_async(func=get_tpdatas_hs_const, args=("0",q,))
+    p.apply_async(func=get_tpdatas_new_share, args=("0",q,))
+    p.apply_async(func=get_tpdatas_concept, args=("0",q,))
 
-    # p.apply_async(func=get_tpdatas_fund_basic, args=("0", q, "E"))
-    # p.apply_async(func=get_tpdatas_fund_basic, args=("0", q, "O"))
-    # p.apply_async(func=get_tpdatas_fund_company, args=("0", q))
+    sysDicts = tp2.get_datas_for_db_sys_dict("market")
+    for sysDict in sysDicts:
+        p.apply_async(func=get_tpdatas_index_basic, args=("0", q, sysDict["dict_item"]))
+
+    p.apply_async(func=get_tpdatas_fund_basic, args=("0", q, "E"))
+    p.apply_async(func=get_tpdatas_fund_basic, args=("0", q, "O"))
+    p.apply_async(func=get_tpdatas_fund_company, args=("0", q))
 
 
     # 期货合约信息表
@@ -229,9 +231,6 @@ def run_m_get_all_basic_datas():
     for exchangeCode in exchangeCodeList:
         p.apply_async(func=get_tpdatas_opt_basic, args=("1", q, exchangeCode))
 
-
-
-
     p.close()
     p.join()
 
@@ -241,6 +240,6 @@ if __name__ == '__main__':
     # 获取各交易所的交易日历，每年年底再打开获取打开获取
     # exchangeCodeList = tp2.get_datas_for_db_sys_dict("exchange")
     # for exchangeCode in exchangeCodeList:
-    #     tp2.get_tpdatas_trade_cal_2_db(exchangeCode["dict_item"],"20170101","20191231")
+    #     tp2.get_tpdatas_trade_cal_2_db(exchangeCode["dict_item"],"20191201","20101231")
 
     run_m_get_all_basic_datas()
