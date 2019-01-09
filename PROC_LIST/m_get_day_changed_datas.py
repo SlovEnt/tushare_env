@@ -35,7 +35,7 @@ pro = ts.pro_api(PARAINFO["TUSHARE_TOKEN"])
 
 # tp = Tushare_Proc(pro, mysqlExe)
 # tp = Tushare_Proc(pro, mysqlExe, busiDate="20190106")
-tp2 = Tushare_Proc_v2(pro, mysqlExe, busiDate="20190106")
+tp2 = Tushare_Proc_v2(pro, mysqlExe)
 
 def put_in_db(q, i):
     try:
@@ -107,7 +107,6 @@ def get_tpdatas_monthly(cFlag, q, tsCode):
     for strSql in strSqlList:
         q.put(strSql)
 
-
 def get_tpdatas_adj_factor(cFlag, q, tsCode):
     argsDict = {}
     argsDict["recollect"] = cFlag
@@ -121,7 +120,6 @@ def get_tpdatas_adj_factor(cFlag, q, tsCode):
 
     for strSql in strSqlList:
         q.put(strSql)
-
 
 def get_tpdatas_daily_basic(cFlag, q, tsCode):
     argsDict = {}
@@ -137,7 +135,6 @@ def get_tpdatas_daily_basic(cFlag, q, tsCode):
     for strSql in strSqlList:
         q.put(strSql)
 
-
 def get_tpdatas_suspend(cFlag, q, tsCode):
     argsDict = {}
     argsDict["recollect"] = cFlag
@@ -152,6 +149,253 @@ def get_tpdatas_suspend(cFlag, q, tsCode):
     for strSql in strSqlList:
         q.put(strSql)
 
+def get_tpdatas_income(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_income(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_balancesheet(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_balancesheet(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_cashflow(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_cashflow(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_forecast(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_forecast(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_express(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_express(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_dividend(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_dividend(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_fina_indicator(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_fina_indicator(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_fina_audit(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_fina_audit(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_fina_mainbz(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["ann_date"] = today
+
+    strSqlList = tp2.get_tpdatas_fina_mainbz(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_top10_holders(cFlag, q, tsCode, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "ts_code"
+    argsDict["inputCode"] = tsCode
+    argsDict["period"] = today
+
+    strSqlList = tp2.get_tpdatas_fina_mainbz(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_opt_daily(cFlag, q, today):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = today
+
+    strSqlList = tp2.get_tpdatas_opt_daily(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_index_dailybasic(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_index_dailybasic(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_moneyflow_hsgt(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_moneyflow_hsgt(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_hsgt_top10(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_hsgt_top10(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_ggt_top10(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_ggt_top10(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_margin(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_margin(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
+
+def get_tpdatas_margin_detail(cFlag, q, date):
+    argsDict = {}
+    argsDict["recollect"] = cFlag
+    argsDict["codeType"] = "trade_date"
+    argsDict["inputCode"] = date
+
+    strSqlList = tp2.get_tpdatas_margin_detail(argsDict)
+
+    if len(strSqlList) == 0:
+        return
+
+    for strSql in strSqlList:
+        q.put(strSql)
 
 
 def run_m_get_day_changed_datas(today):
@@ -163,6 +407,7 @@ def run_m_get_day_changed_datas(today):
     for i in range(5):
         p.apply_async(func=put_in_db, args=(q,i,))
 
+    # 行情数据
     p.apply_async(func=get_tpdatas_new_share, args=("0", q, today, today))
     p.apply_async(func=get_tpdatas_daily, args=("0", q, today,))
     p.apply_async(func=get_tpdatas_weekly, args=("0", q, today))
@@ -170,6 +415,39 @@ def run_m_get_day_changed_datas(today):
     p.apply_async(func=get_tpdatas_adj_factor, args=("0", q, today))
     p.apply_async(func=get_tpdatas_daily_basic, args=("0", q, today))
     p.apply_async(func=get_tpdatas_suspend, args=("0", q, today))
+
+    # 期权日线行情
+    p.apply_async(func=get_tpdatas_opt_daily, args=("0", q, today))
+
+    # 市场参考数据
+    p.apply_async(func=get_tpdatas_moneyflow_hsgt, args=("0", q, today))
+    p.apply_async(func=get_tpdatas_hsgt_top10, args=("0", q, today))
+    p.apply_async(func=get_tpdatas_ggt_top10, args=("0", q, today))
+    p.apply_async(func=get_tpdatas_margin, args=("0", q, today))
+    p.apply_async(func=get_tpdatas_margin_detail, args=("0", q, today))
+
+
+
+    # 指数日线行情
+    p.apply_async(func=get_tpdatas_index_dailybasic, args=("0", q, today))
+
+
+    tsCodes = tp2.get_datas_for_db_stock_basic()
+    for tsCode in tsCodes:
+        # 财务数据
+        p.apply_async(func=get_tpdatas_income, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_balancesheet, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_cashflow, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_forecast, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_express, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_fina_indicator, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_fina_audit, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_fina_mainbz, args=("0", q, tsCode["ts_code"], today))  # 需要ts_code
+        p.apply_async(func=get_tpdatas_dividend, args=("0", q, tsCode["ts_code"], today))
+        p.apply_async(func=get_tpdatas_top10_holders, args=("0", q, tsCode["ts_code"], today))
+
+    p.close()
+    p.join()
 
 
 if __name__ == '__main__':

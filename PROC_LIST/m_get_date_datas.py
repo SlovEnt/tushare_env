@@ -343,7 +343,7 @@ def run_m_get_tscode_datas():
 
     p = Pool(15)
 
-    tradeCalDatas = tp2.get_datas_for_db_trade_cal("SSE", "20180701", "20180731")
+    tradeCalDatas = tp2.get_datas_for_db_trade_cal("SSE", "20000101", "20190109")
 
     for i in range(8):
         p.apply_async(func=put_in_db, args=(q,i,))
@@ -355,11 +355,11 @@ def run_m_get_tscode_datas():
 
         # p.apply_async(func=get_tpdatas_index_dailybasic, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_new_share, args=("0", q, tradeCalData["cal_date"]))
-        # p.apply_async(func=get_tpdatas_moneyflow_hsgt, args=("0", q, tradeCalData["cal_date"]))
+        # p.apply_async(func=get_tpdatas_moneyflow_hsgt, args=("0", q, tradeCalData["cal_date"])) # 完成
         # p.apply_async(func=get_tpdatas_hsgt_top10, args=("0", q, tradeCalData["cal_date"]))
-        # p.apply_async(func=get_tpdatas_ggt_top10, args=("0", q, tradeCalData["cal_date"]))
-        # p.apply_async(func=get_tpdatas_margin, args=("0", q, tradeCalData["cal_date"]))
-        # p.apply_async(func=get_tpdatas_margin_detail, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_ggt_top10, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_margin, args=("0", q, tradeCalData["cal_date"]))
+        p.apply_async(func=get_tpdatas_margin_detail, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_top_list, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_top_inst, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_repurchase, args=("0", q, tradeCalData["cal_date"]))
@@ -371,18 +371,20 @@ def run_m_get_tscode_datas():
         # p.apply_async(func=get_tpdatas_shibor_lpr, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_libor, args=("0", q, tradeCalData["cal_date"]))
         # p.apply_async(func=get_tpdatas_hibor, args=("0", q, tradeCalData["cal_date"]))
-        p.apply_async(func=get_tpdatas_bo_monthly, args=("0", q, tradeCalData["cal_date"]))
-        p.apply_async(func=get_tpdatas_bo_weekly, args=("0", q, tradeCalData["cal_date"]))
-        p.apply_async(func=get_tpdatas_bo_daily, args=("0", q, tradeCalData["cal_date"]))
-        p.apply_async(func=get_tpdatas_bo_cinema, args=("0", q, tradeCalData["cal_date"]))
-        p.apply_async(func=get_tpdatas_film_record, args=("0", q, tradeCalData["cal_date"]))
-
-        p.apply_async(func=get_tpdatas_cctv_news, args=("0", q, tradeCalData["cal_date"]))
+        # p.apply_async(func=get_tpdatas_bo_monthly, args=("0", q, tradeCalData["cal_date"]))
+        # p.apply_async(func=get_tpdatas_bo_weekly, args=("0", q, tradeCalData["cal_date"]))
+        # p.apply_async(func=get_tpdatas_bo_daily, args=("0", q, tradeCalData["cal_date"]))
+        # p.apply_async(func=get_tpdatas_bo_cinema, args=("0", q, tradeCalData["cal_date"]))
+        # p.apply_async(func=get_tpdatas_film_record, args=("0", q, tradeCalData["cal_date"]))
+        #
+        # p.apply_async(func=get_tpdatas_cctv_news, args=("0", q, tradeCalData["cal_date"]))
 
         # sysDicts = tp2.get_datas_for_db_sys_dict("item")
         # for sysDict in sysDicts:
         #     p.apply_async(func=get_tpdatas_tmt_twincome, args=("0", q, sysDict["dict_item"], tradeCalData["cal_date"]))
         #     p.apply_async(func=get_tpdatas_tmt_twincomedetail, args=("0", q, sysDict["dict_item"], tradeCalData["cal_date"]))
+
+        pass
 
     #     # p.apply_async(func=get_tpdatas_weekly, args=("1",q, tsCode["ts_code"]))
     #     # p.apply_async(func=get_tpdatas_monthly, args=("1",q, tsCode["ts_code"]))

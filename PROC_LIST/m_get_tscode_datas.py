@@ -126,7 +126,7 @@ def get_tpdatas_balancesheet(cFlag, q, tsCode):
     argsDict["codeType"] = "ts_code"
     argsDict["inputCode"] = tsCode
 
-    strSqlList = tp2.get_tpdatas_income(argsDict)
+    strSqlList = tp2.get_tpdatas_balancesheet(argsDict)
 
     if len(strSqlList) != 0:
         for strSql in strSqlList:
@@ -389,15 +389,15 @@ def run_m_get_tscode_datas():
         # p.apply_async(func=get_tpdatas_suspend, args=("0",q, tsCode["ts_code"]))
 
         # 财务数据
-        p.apply_async(func=get_tpdatas_income, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_income, args=("0",q, tsCode["ts_code"]))
         p.apply_async(func=get_tpdatas_balancesheet, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_cashflow, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_forecast, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_express, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_dividend, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_fina_indicator, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_fina_audit, args=("0",q, tsCode["ts_code"]))
-        p.apply_async(func=get_tpdatas_fina_mainbz, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_cashflow, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_forecast, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_express, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_dividend, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_fina_indicator, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_fina_audit, args=("0",q, tsCode["ts_code"]))
+        # p.apply_async(func=get_tpdatas_fina_mainbz, args=("0",q, tsCode["ts_code"]))
 
         # 市场参考数据
         # p.apply_async(func=get_tpdatas_share_float, args=("0",q, tsCode["ts_code"]))
